@@ -1,171 +1,185 @@
-﻿// Data/Seed/DbSeeder.cs
+﻿// Data/Seed/DbInitializer.cs
 using Microsoft.AspNetCore.Identity;
 using LibraryManagementSystem.Models;
-using Microsoft.EntityFrameworkCore;
+using LibraryManagementSystem.Data;
 
 namespace LibraryManagementSystem.Data.Seed
 {
-    public static class DbSeeder
+    internal class DbInitializer
     {
-        public static void SeedData(ModelBuilder modelBuilder)
+        internal static async void Initialize(LibraryContext dbContext)
         {
-            // Predefined GUIDs for consistent seeding
-            var categoryFiction = Guid.Parse("11111111-1111-1111-1111-111111111111");
-            var categoryClassic = Guid.Parse("22222222-2222-2222-2222-222222222222");
-            var categoryScience = Guid.Parse("33333333-3333-3333-3333-333333333333");
-            var categoryHistory = Guid.Parse("44444444-4444-4444-4444-444444444444");
-            var categoryChildren = Guid.Parse("55555555-5555-5555-5555-555555555555");
+            ArgumentNullException.ThrowIfNull(dbContext, nameof(dbContext));
+            dbContext.Database.EnsureCreated();
 
-            // Seed Identity Roles
-            modelBuilder.Entity<IdentityRole>().HasData(
-                new IdentityRole
-                {
-                    Id = "bibliotecario",
-                    Name = "Bibliotecário",
-                    NormalizedName = "BIBLIOTECÁRIO"
-                },
-                new IdentityRole
-                {
-                    Id = "membro",
-                    Name = "Membro",
-                    NormalizedName = "MEMBRO"
-                }
-            );
+            // Variável auxiliar
+            bool haAdicao = false;
 
-            // Seed Identity Users
+            // Se não houver Categorias, cria-as
+            var categorias = Array.Empty<Category>();
+            if (!dbContext.Categories.Any())
+            {
+                categorias = [
+                    new Category { Name = "Ficção", Description = "Livros de ficção e romance" },
+                    new Category { Name = "Literatura Clássica", Description = "Obras clássicas da literatura" },
+                    new Category { Name = "Ciência", Description = "Livros científicos e técnicos" },
+                    new Category { Name = "História", Description = "Livros de história e biografias" },
+                    new Category { Name = "Infantil", Description = "Livros para crianças" },
+                    new Category { Name = "Tecnologia", Description = "Livros sobre tecnologia e programação" },
+                    new Category { Name = "Arte", Description = "Livros sobre arte e cultura" }
+                ];
+                await dbContext.Categories.AddRangeAsync(categorias);
+                haAdicao = true;
+            }
+            else
+            {
+                categorias = dbContext.Categories.ToArray();
+            }
+
+            // Se não houver Utilizadores Identity, cria-os
+            var newIdentityUsers = Array.Empty<IdentityUser>();
             var hasher = new PasswordHasher<IdentityUser>();
-            modelBuilder.Entity<IdentityUser>().HasData(
-                new IdentityUser
-                {
-                    Id = "admin",
-                    UserName = "bibliotecario@biblioteca.pt",
-                    NormalizedUserName = "BIBLIOTECARIO@BIBLIOTECA.PT",
-                    Email = "bibliotecario@biblioteca.pt",
-                    NormalizedEmail = "BIBLIOTECARIO@BIBLIOTECA.PT",
-                    EmailConfirmed = true,
-                    SecurityStamp = Guid.NewGuid().ToString(),
-                    ConcurrencyStamp = Guid.NewGuid().ToString(),
-                    PasswordHash = hasher.HashPassword(null!, "Biblioteca123!")
-                },
-                new IdentityUser
-                {
-                    Id = "membro1",
-                    UserName = "joao.silva@email.com",
-                    NormalizedUserName = "JOAO.SILVA@EMAIL.COM",
-                    Email = "joao.silva@email.com",
-                    NormalizedEmail = "JOAO.SILVA@EMAIL.COM",
-                    EmailConfirmed = true,
-                    SecurityStamp = Guid.NewGuid().ToString(),
-                    ConcurrencyStamp = Guid.NewGuid().ToString(),
-                    PasswordHash = hasher.HashPassword(null!, "Membro123!")
-                }
-            );
 
-            // Associate users with roles
-            modelBuilder.Entity<IdentityUserRole<string>>().HasData(
-                new IdentityUserRole<string> { UserId = "admin", RoleId = "bibliotecario" },
-                new IdentityUserRole<string> { UserId = "membro1", RoleId = "membro" }
-            );
+            if (!dbContext.Users.Any())
+            {
+                newIdentityUsers = [
+                    new IdentityUser{
+                        Id = "bibliotecario1",
+                        UserName = "bibliotecario@biblioteca.pt",
+                        NormalizedUserName = "BIBLIOTECARIO@BIBLIOTECA.PT",
+                        Email = "bibliotecario@biblioteca.pt",
+                        NormalizedEmail = "BIBLIOTECARIO@BIBLIOTECA.PT",
+                        EmailConfirmed = true,
+                        SecurityStamp = Guid.NewGuid().ToString("N").ToUpper(),
+                        ConcurrencyStamp = Guid.NewGuid().ToString(),
+                        PasswordHash = hasher.HashPassword(null!, "Biblioteca123!")
+                    },
+                    new IdentityUser{
+                        Id = "membro1",
+                        UserName = "joao.silva@email.com",
+                        NormalizedUserName = "JOAO.SILVA@EMAIL.COM",
+                        Email = "joao.silva@email.com",
+                        NormalizedEmail = "JOAO.SILVA@EMAIL.COM",
+                        EmailConfirmed = true,
+                        SecurityStamp = Guid.NewGuid().ToString("N").ToUpper(),
+                        ConcurrencyStamp = Guid.NewGuid().ToString(),
+                        PasswordHash = hasher.HashPassword(null!, "Membro123!")
+                    },
+                    new IdentityUser{
+                        Id = "membro2",
+                        UserName = "maria.santos@email.com",
+                        NormalizedUserName = "MARIA.SANTOS@EMAIL.COM",
+                        Email = "maria.santos@email.com",
+                        NormalizedEmail = "MARIA.SANTOS@EMAIL.COM",
+                        EmailConfirmed = true,
+                        SecurityStamp = Guid.NewGuid().ToString("N").ToUpper(),
+                        ConcurrencyStamp = Guid.NewGuid().ToString(),
+                        PasswordHash = hasher.HashPassword(null!, "Membro123!")
+                    }
+                ];
+                await dbContext.Users.AddRangeAsync(newIdentityUsers);
+                haAdicao = true;
+            }
+            else
+            {
+                newIdentityUsers = dbContext.Users.ToArray();
+            }
 
-            // Seed Categories
-            modelBuilder.Entity<Category>().HasData(
-                new Category
-                {
-                    CategoryId = categoryFiction,
-                    Name = "Ficção",
-                    Description = "Livros de ficção e romance",
-                    CreatedDate = DateTime.Now
-                },
-                new Category
-                {
-                    CategoryId = categoryClassic,
-                    Name = "Literatura Clássica",
-                    Description = "Obras clássicas da literatura",
-                    CreatedDate = DateTime.Now
-                },
-                new Category
-                {
-                    CategoryId = categoryScience,
-                    Name = "Ciência",
-                    Description = "Livros científicos e técnicos",
-                    CreatedDate = DateTime.Now
-                },
-                new Category
-                {
-                    CategoryId = categoryHistory,
-                    Name = "História",
-                    Description = "Livros de história e biografias",
-                    CreatedDate = DateTime.Now
-                },
-                new Category
-                {
-                    CategoryId = categoryChildren,
-                    Name = "Infantil",
-                    Description = "Livros para crianças",
-                    CreatedDate = DateTime.Now
-                }
-            );
+            // Se não houver Membros, cria-os
+            var membros = Array.Empty<Member>();
+            if (!dbContext.Members.Any())
+            {
+                membros = [
+                    new Member {
+                        Name = "João Silva",
+                        Email = "joao.silva@email.com",
+                        Phone = "912345678",
+                        Address = "Rua das Flores, 123, Lisboa",
+                        MembershipDate = DateTime.Now.AddMonths(-6)
+                    },
+                    new Member {
+                        Name = "Maria Santos",
+                        Email = "maria.santos@email.com",
+                        Phone = "923456789",
+                        Address = "Avenida da Liberdade, 456, Porto",
+                        MembershipDate = DateTime.Now.AddMonths(-4)
+                    },
+                    new Member {
+                        Name = "Pedro Costa",
+                        Email = "pedro.costa@email.com",
+                        Phone = "934567890",
+                        Address = "Praça do Comércio, 789, Coimbra",
+                        MembershipDate = DateTime.Now.AddMonths(-2)
+                    }
+                ];
+                await dbContext.Members.AddRangeAsync(membros);
+                haAdicao = true;
+            }
+            else
+            {
+                membros = dbContext.Members.ToArray();
+            }
 
-            // Seed Books
-            modelBuilder.Entity<Book>().HasData(
-                new Book
-                {
-                    BookId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
-                    Title = "O Alquimista",
-                    Author = "Paulo Coelho",
-                    ISBN = "9788576651234",
-                    CategoryId = categoryFiction,
-                    YearPublished = 1988,
-                    Available = true,
-                    CreatedDate = DateTime.Now.AddDays(-30)
-                },
-                new Book
-                {
-                    BookId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
-                    Title = "Dom Casmurro",
-                    Author = "Machado de Assis",
-                    ISBN = "9788576651235",
-                    CategoryId = categoryClassic,
-                    YearPublished = 1899,
-                    Available = true,
-                    CreatedDate = DateTime.Now.AddDays(-25)
-                },
-                new Book
-                {
-                    BookId = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc"),
-                    Title = "1984",
-                    Author = "George Orwell",
-                    ISBN = "9788576651236",
-                    CategoryId = categoryFiction,
-                    YearPublished = 1949,
-                    Available = true,
-                    CreatedDate = DateTime.Now.AddDays(-20)
-                }
-            );
+            // Se não houver Livros, cria-os
+            var livros = Array.Empty<Book>();
+            if (!dbContext.Books.Any())
+            {
+                livros = [
+                    new Book { Title = "O Alquimista", Author = "Paulo Coelho", ISBN = "9788576651234", CategoryId = categorias[0].CategoryId, YearPublished = 1988 },
+                    new Book { Title = "Dom Casmurro", Author = "Machado de Assis", ISBN = "9788576651235", CategoryId = categorias[1].CategoryId, YearPublished = 1899 },
+                    new Book { Title = "1984", Author = "George Orwell", ISBN = "9788576651236", CategoryId = categorias[0].CategoryId, YearPublished = 1949 },
+                    new Book { Title = "Uma Breve História do Tempo", Author = "Stephen Hawking", ISBN = "9788576651237", CategoryId = categorias[2].CategoryId, YearPublished = 1988 },
+                    new Book { Title = "O Pequeno Príncipe", Author = "Antoine de Saint-Exupéry", ISBN = "9788576651238", CategoryId = categorias[4].CategoryId, YearPublished = 1943 },
+                    new Book { Title = "Clean Code", Author = "Robert C. Martin", ISBN = "9780132350884", CategoryId = categorias[5].CategoryId, YearPublished = 2008 },
+                    new Book { Title = "Os Lusíadas", Author = "Luís de Camões", ISBN = "9789722040495", CategoryId = categorias[1].CategoryId, YearPublished = 1572 },
+                    new Book { Title = "O Código Da Vinci", Author = "Dan Brown", ISBN = "9788576651240", CategoryId = categorias[0].CategoryId, YearPublished = 2003 }
+                ];
+                await dbContext.Books.AddRangeAsync(livros);
+                haAdicao = true;
+            }
+            else
+            {
+                livros = dbContext.Books.ToArray();
+            }
 
-            // Seed Members
-            modelBuilder.Entity<Member>().HasData(
-                new Member
+            // Se não houver Empréstimos, cria alguns exemplos
+            if (!dbContext.Borrowings.Any() && livros.Length > 0 && membros.Length > 0)
+            {
+                var emprestimos = new[]
                 {
-                    MemberId = Guid.Parse("11111111-aaaa-aaaa-aaaa-111111111111"),
-                    Name = "João Silva",
-                    Email = "joao.silva@email.com",
-                    Phone = "912345678",
-                    Address = "Rua das Flores, 123, Lisboa",
-                    MembershipDate = DateTime.Now.AddMonths(-6),
-                    IsActive = true
-                },
-                new Member
+                    new Borrowing {
+                        BookId = livros[0].BookId,
+                        MemberId = membros[0].MemberId,
+                        BorrowDate = DateTime.Now.AddDays(-10),
+                        DueDate = DateTime.Now.AddDays(4),
+                        Status = "Emprestado"
+                    },
+                    new Borrowing {
+                        BookId = livros[2].BookId,
+                        MemberId = membros[1].MemberId,
+                        BorrowDate = DateTime.Now.AddDays(-15),
+                        ReturnDate = DateTime.Now.AddDays(-3),
+                        DueDate = DateTime.Now.AddDays(-1),
+                        Status = "Devolvido"
+                    }
+                };
+                await dbContext.Borrowings.AddRangeAsync(emprestimos);
+                haAdicao = true;
+            }
+
+            try
+            {
+                if (haAdicao)
                 {
-                    MemberId = Guid.Parse("22222222-bbbb-bbbb-bbbb-222222222222"),
-                    Name = "Maria Santos",
-                    Email = "maria.santos@email.com",
-                    Phone = "923456789",
-                    Address = "Avenida da Liberdade, 456, Porto",
-                    MembershipDate = DateTime.Now.AddMonths(-4),
-                    IsActive = true
+                    // Tornar persistentes os dados
+                    await dbContext.SaveChangesAsync();
                 }
-            );
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Erro ao guardar dados de seed: {ex.Message}");
+                throw;
+            }
         }
     }
 }
