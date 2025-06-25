@@ -7,7 +7,7 @@ namespace LibraryManagementSystem.Data.Seed
 {
     internal class DbInitializer
     {
-        internal static async void Initialize(LibraryContext dbContext)
+        internal static async Task Initialize(LibraryContext dbContext)
         {
             ArgumentNullException.ThrowIfNull(dbContext, nameof(dbContext));
             dbContext.Database.EnsureCreated();
@@ -75,6 +75,17 @@ namespace LibraryManagementSystem.Data.Seed
                         SecurityStamp = Guid.NewGuid().ToString("N").ToUpper(),
                         ConcurrencyStamp = Guid.NewGuid().ToString(),
                         PasswordHash = hasher.HashPassword(null!, "Membro123!")
+                    },
+                    new IdentityUser{
+                        Id = "membro3",
+                        UserName = "pedro.costa@email.com",
+                        NormalizedUserName = "PEDRO.COSTA@EMAIL.COM",
+                        Email = "pedro.costa@email.com",
+                        NormalizedEmail = "PEDRO.COSTA@EMAIL.COM",
+                        EmailConfirmed = true,
+                        SecurityStamp = Guid.NewGuid().ToString("N").ToUpper(),
+                        ConcurrencyStamp = Guid.NewGuid().ToString(),
+                        PasswordHash = hasher.HashPassword(null!, "Membro123!")
                     }
                 ];
                 await dbContext.Users.AddRangeAsync(newIdentityUsers);
@@ -95,21 +106,30 @@ namespace LibraryManagementSystem.Data.Seed
                         Email = "joao.silva@email.com",
                         Phone = "912345678",
                         Address = "Rua das Flores, 123, Lisboa",
-                        MembershipDate = DateTime.Now.AddMonths(-6)
+                        CardNumber = "LIB001",
+                        DateOfBirth = new DateTime(1990, 5, 15),
+                        MembershipDate = DateTime.Now.AddMonths(-6),
+                        UserId = newIdentityUsers.FirstOrDefault(u => u.Email == "joao.silva@email.com")?.Id
                     },
                     new Member {
                         Name = "Maria Santos",
                         Email = "maria.santos@email.com",
                         Phone = "923456789",
                         Address = "Avenida da Liberdade, 456, Porto",
-                        MembershipDate = DateTime.Now.AddMonths(-4)
+                        CardNumber = "LIB002",
+                        DateOfBirth = new DateTime(1985, 8, 22),
+                        MembershipDate = DateTime.Now.AddMonths(-4),
+                        UserId = newIdentityUsers.FirstOrDefault(u => u.Email == "maria.santos@email.com")?.Id
                     },
                     new Member {
                         Name = "Pedro Costa",
                         Email = "pedro.costa@email.com",
                         Phone = "934567890",
                         Address = "Praça do Comércio, 789, Coimbra",
-                        MembershipDate = DateTime.Now.AddMonths(-2)
+                        CardNumber = "LIB003",
+                        DateOfBirth = new DateTime(1988, 12, 10),
+                        MembershipDate = DateTime.Now.AddMonths(-2),
+                        UserId = newIdentityUsers.FirstOrDefault(u => u.Email == "pedro.costa@email.com")?.Id
                     }
                 ];
                 await dbContext.Members.AddRangeAsync(membros);
@@ -145,8 +165,9 @@ namespace LibraryManagementSystem.Data.Seed
             // Se não houver Empréstimos, cria alguns exemplos
             if (!dbContext.Borrowings.Any() && livros.Length > 0 && membros.Length > 0)
             {
-                var emprestimos = new[]
-                {
+                var emprestimos = Array.Empty<Borrowing>();
+                emprestimos = [
+                
                     new Borrowing {
                         BookId = livros[0].BookId,
                         MemberId = membros[0].MemberId,
@@ -161,8 +182,8 @@ namespace LibraryManagementSystem.Data.Seed
                         ReturnDate = DateTime.Now.AddDays(-3),
                         DueDate = DateTime.Now.AddDays(-1),
                         Status = "Devolvido"
-                    }
-                };
+                    },
+                ];
                 await dbContext.Borrowings.AddRangeAsync(emprestimos);
                 haAdicao = true;
             }
@@ -171,7 +192,6 @@ namespace LibraryManagementSystem.Data.Seed
             {
                 if (haAdicao)
                 {
-                    // Tornar persistentes os dados
                     await dbContext.SaveChangesAsync();
                 }
             }

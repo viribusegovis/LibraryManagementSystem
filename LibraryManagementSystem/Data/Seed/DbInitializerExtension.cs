@@ -13,7 +13,8 @@ namespace LibraryManagementSystem.Data.Seed
             try
             {
                 var context = services.GetRequiredService<LibraryContext>();
-                DbInitializer.Initialize(context);
+                // CHANGE: Properly await the async method
+                Task.Run(async () => await DbInitializer.Initialize(context)).Wait();
             }
             catch (Exception ex)
             {

@@ -1,0 +1,194 @@
+﻿@* Areas/Identity/Pages/Account/Login.cshtml *@
+@page
+@model LoginModel
+
+@{
+    ViewData["Title"] = "Iniciar Sessão - Sistema de Gestão de Biblioteca";
+    Layout = "_AuthLayout"; // We'll create a special layout for auth pages
+}
+
+@section Styles {
+    <style>
+        .auth-wrapper {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .auth-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .auth-left {
+            background: linear-gradient(45deg, #2196F3, #21CBF3);
+            color: white;
+            padding: 60px 40px;
+            text-align: center;
+        }
+
+        .auth-right {
+            padding: 60px 40px;
+        }
+
+        .library-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.9;
+        }
+
+        .form-floating {
+            margin-bottom: 1.5rem;
+        }
+
+        .btn-login {
+            background: linear-gradient(45deg, #2196F3, #21CBF3);
+            border: none;
+            border-radius: 50px;
+            padding: 12px 30px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(33, 150, 243, 0.3);
+        }
+
+        .credentials-info {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 0.85rem;
+        }
+    </style>
+}
+
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <div class="row g-0">
+            <!-- Left Panel -->
+            <div class="col-md-5 auth-left">
+                <div class="library-icon">
+                    <i class="fas fa-book-open"></i>
+                </div>
+                <h2 class="mb-4">Sistema de Gestão de Biblioteca</h2>
+                <p class="lead mb-4">
+                    Bem-vindo ao sistema de gestão da nossa biblioteca.
+                    Faça login para aceder aos recursos disponíveis.
+                </p>
+                <div class="features">
+                    <div class="feature-item mb-3">
+                        <i class="fas fa-search me-2"></i>
+                        Pesquisa avançada de livros
+                    </div>
+                    <div class="feature-item mb-3">
+                        <i class="fas fa-history me-2"></i>
+                        Histórico de empréstimos
+                    </div>
+                    <div class="feature-item mb-3">
+                        <i class="fas fa-bell me-2"></i>
+                        Notificações em tempo real
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel - Login Form -->
+            <div class="col-md-7 auth-right">
+                <div class="text-center mb-4">
+                    <h3 class="fw-bold text-primary">Iniciar Sessão</h3>
+                    <p class="text-muted">Entre com as suas credenciais</p>
+                </div>
+
+                <form id="account" method="post">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                    <div class="form-floating mb-3">
+                        <input asp-for="Input.Email"
+                               class="form-control"
+                               autocomplete="username"
+                               aria-required="true"
+                               placeholder="nome@exemplo.com" />
+                        <label asp-for="Input.Email" class="form-label">
+                            <i class="fas fa-envelope me-2"></i>Email
+                        </label>
+                        <span asp-validation-for="Input.Email" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-floating mb-3">
+                        <input asp-for="Input.Password"
+                               class="form-control"
+                               autocomplete="current-password"
+                               aria-required="true"
+                               placeholder="palavra-passe" />
+                        <label asp-for="Input.Password" class="form-label">
+                            <i class="fas fa-lock me-2"></i>Palavra-passe
+                        </label>
+                        <span asp-validation-for="Input.Password" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-check mb-4">
+                        <input class="form-check-input" asp-for="Input.RememberMe" />
+                        <label asp-for="Input.RememberMe" class="form-check-label">
+                            Lembrar-me neste dispositivo
+                        </label>
+                    </div>
+
+                    <div class="d-grid mb-3">
+                        <button id="login-submit" type="submit" class="btn btn-primary btn-login btn-lg">
+                            <i class="fas fa-sign-in-alt me-2"></i>Entrar
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Test Credentials Info -->
+                <div class="credentials-info">
+                    <h6 class="fw-bold mb-2">
+                        <i class="fas fa-info-circle me-2"></i>Credenciais de Teste
+                    </h6>
+                    <div class="row">
+                        <div class="col-6">
+                            <strong>Bibliotecário:</strong><br>
+                            <small>bibliotecario@biblioteca.pt</small><br>
+                            <small>Biblioteca123!</small>
+                        </div>
+                        <div class="col-6">
+                            <strong>Membro:</strong><br>
+                            <small>joao.silva@email.com</small><br>
+                            <small>Membro123!</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Add some interactive effects
+        document.addEventListener('DOMContentLoaded', function() {
+            // Focus effect for form inputs
+            const inputs = document.querySelectorAll('.form-control');
+            inputs.forEach(input => {
+                input.addEventListener('focus', function() {
+                    this.parentElement.style.transform = 'scale(1.02)';
+                });
+                input.addEventListener('blur', function() {
+                    this.parentElement.style.transform = 'scale(1)';
+                });
+            });
+        });
+    </script>
+}

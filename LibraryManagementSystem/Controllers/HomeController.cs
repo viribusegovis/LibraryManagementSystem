@@ -1,31 +1,20 @@
-using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
-using LibraryManagementSystem.Models;
-
-namespace LibraryManagementSystem.Controllers;
 
 public class HomeController : Controller
 {
-    private readonly ILogger<HomeController> _logger;
-
-    public HomeController(ILogger<HomeController> logger)
-    {
-        _logger = logger;
-    }
-
     public IActionResult Index()
     {
-        return View();
-    }
+        if (!User.Identity.IsAuthenticated)
+        {
+            return RedirectToPage("/Identity/Account/Login");
+        }
 
-    public IActionResult Privacy()
-    {
-        return View();
-    }
+        // Redirect based on role
+        if (User.IsInRole("Bibliotecário"))
+        {
+            return RedirectToAction("Index", "Admin");
+        }
 
-    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-    public IActionResult Error()
-    {
-        return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        return View(); // Member dashboard
     }
 }

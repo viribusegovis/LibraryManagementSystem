@@ -20,10 +20,9 @@ namespace LibraryManagementSystem.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // MUST call base first for Identity
             base.OnModelCreating(modelBuilder);
 
-            // Configure GUID primary keys with SQL Server NEWID() function
+            // Configure GUID primary keys
             modelBuilder.Entity<Book>()
                 .Property(b => b.BookId)
                 .HasDefaultValueSql("NEWID()");
@@ -44,7 +43,14 @@ namespace LibraryManagementSystem.Data
                 .Property(br => br.BookReviewId)
                 .HasDefaultValueSql("NEWID()");
 
-            // Configure relationships
+            // Configure optional relationship between Member and IdentityUser
+            modelBuilder.Entity<Member>()
+                .HasOne(m => m.User)
+                .WithMany()
+                .HasForeignKey(m => m.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Configure other relationships
             modelBuilder.Entity<Book>()
                 .HasOne(b => b.Category)
                 .WithMany(c => c.Books)
@@ -74,7 +80,6 @@ namespace LibraryManagementSystem.Data
                 .WithMany(m => m.Reviews)
                 .HasForeignKey(br => br.MemberId)
                 .OnDelete(DeleteBehavior.Restrict);
-
         }
     }
 }

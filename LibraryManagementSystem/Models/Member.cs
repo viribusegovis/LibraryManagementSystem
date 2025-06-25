@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.AspNetCore.Identity;
 
 namespace LibraryManagementSystem.Models
 {
@@ -27,13 +28,28 @@ namespace LibraryManagementSystem.Models
         [Display(Name = "Morada")]
         public string? Address { get; set; }
 
+        [Display(Name = "Data de Nascimento")]
+        public DateTime? DateOfBirth { get; set; }
+
+        [StringLength(20)]
+        [Display(Name = "Número de Cartão")]
+        public string? CardNumber { get; set; }
+
         [Display(Name = "Data de Inscrição")]
         public DateTime MembershipDate { get; set; } = DateTime.Now;
 
         [Display(Name = "Ativo")]
         public bool IsActive { get; set; } = true;
 
-        // Navigation properties
+        // Foreign key to Identity User - OPTIONAL relationship
+        [Display(Name = "Utilizador do Sistema")]
+        public string? UserId { get; set; }
+
+        // Navigation property to IdentityUser
+        [ForeignKey("UserId")]
+        public virtual IdentityUser? User { get; set; }
+
+        // Navigation properties for library operations
         public virtual ICollection<Borrowing> Borrowings { get; set; } = new List<Borrowing>();
         public virtual ICollection<BookReview> Reviews { get; set; } = new List<BookReview>();
     }

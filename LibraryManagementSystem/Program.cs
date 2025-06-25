@@ -1,4 +1,4 @@
-// Program.cs
+// Program.cs - Updated routing configuration
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using LibraryManagementSystem.Data;
@@ -26,6 +26,14 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options => {
 .AddRoles<IdentityRole>()
 .AddEntityFrameworkStores<LibraryContext>();
 
+// Configure application cookie to redirect to login
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/Identity/Account/Login";
+    options.LogoutPath = "/Identity/Account/Logout";
+    options.AccessDeniedPath = "/Identity/Account/AccessDenied";
+});
+
 // Add SignalR
 builder.Services.AddSignalR();
 
@@ -39,7 +47,6 @@ if (!app.Environment.IsDevelopment())
 }
 else
 {
-    // Invocar o seed da BD apenas em desenvolvimento
     app.UseItToSeedSqlServer();
 }
 
@@ -51,11 +58,30 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
+//  Default route configuration
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-app.MapRazorPages(); // Required for Identity UI
+// Add a specific route for root URL to redirect to login
+app.MapGet("/", context =>
+{
+    if (!context.User.Identity.IsAuthenticated)
+    {
+        context.Response.Redirect("/Identity/Account/Login");
+    }
+    else if (context.User.IsInRole("Bibliotecário"))
+    {
+        context.Response.Redirect("/Admin");
+    }
+    else
+    {
+        context.Response.Redirect("/Home");
+    }
+    return Task.CompletedTask;
+});
+
+app.MapRazorPages();
 app.MapHub<LibraryHub>("/libraryHub");
 
 app.Run();
