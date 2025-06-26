@@ -1,0 +1,384 @@
+﻿/* wwwroot/css/admin-dashboard.css */
+
+/* Reset and prevent horizontal scroll */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Clean background without full-page gradient */
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    min-height: 100vh;
+    background-color: #f8f9fa; /* Light gray background */
+    overflow-x: hidden;
+    max-width: 100%;
+}
+
+/* Custom width container for 85% width */
+.custom-width-container {
+    width: 85%;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.dashboard-container {
+    padding: 20px 15px;
+    box-sizing: border-box;
+    overflow: visible;
+}
+
+.main-content {
+    /* Remove margins to prevent width mismatch */
+}
+
+/* Dashboard cards with clean white design */
+.dashboard-card {
+    transition: transform 0.2s ease-in-out;
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin: 0 0 20px 0;
+    background: white;
+    overflow: visible;
+    color: #333;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+    .dashboard-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+    }
+
+/* Card headers with Bootstrap primary blue */
+.card-header {
+    background: #007bff !important;
+    border-bottom: none;
+    color: white !important;
+    border-radius: 15px 15px 0 0 !important;
+}
+
+.card-body {
+    color: #333;
+    background: white;
+    padding: 1rem;
+    overflow: visible;
+}
+
+/* Statistics card icons with primary colors */
+.card-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+}
+
+.bg-primary-gradient {
+    background: #007bff;
+}
+
+.bg-success-gradient {
+    background: #28a745;
+}
+
+.bg-warning-gradient {
+    background: #ffc107;
+}
+
+.bg-danger-gradient {
+    background: #dc3545;
+}
+
+.bg-info-gradient {
+    background: #17a2b8;
+}
+
+/* Header styling for light background */
+.dashboard-header {
+    color: #333;
+    margin-bottom: 2rem;
+}
+
+    .dashboard-header h1 {
+        color: #333;
+        font-weight: 600;
+    }
+
+    .dashboard-header p {
+        color: #6c757d;
+    }
+
+/* Quick action buttons with clean design */
+.quick-action-btn {
+    border-radius: 10px;
+    padding: 20px 15px;
+    transition: all 0.3s ease;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-left: 5px;
+    margin-right: 5px;
+    background: white;
+    color: #333;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 120px;
+}
+
+    .quick-action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        text-decoration: none;
+    }
+
+    .quick-action-btn i {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+        display: block;
+        transition: all 0.3s ease;
+    }
+
+    .quick-action-btn.btn-primary i {
+        color: #007bff;
+    }
+
+    .quick-action-btn.btn-success i {
+        color: #28a745;
+    }
+
+    .quick-action-btn.btn-warning i {
+        color: #ffc107;
+    }
+
+    .quick-action-btn.btn-info i {
+        color: #17a2b8;
+    }
+
+    .quick-action-btn strong {
+        font-size: 0.9rem;
+        text-align: center;
+        line-height: 1.2;
+        color: #333;
+    }
+
+/* Table styling */
+.table {
+    color: #333;
+    background: white;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+.table-light {
+    background-color: #f8f9fa;
+    color: #333;
+}
+
+/* Overdue items styling with flexbox layout and text truncation */
+.overdue-item {
+    background-color: #fff5f5;
+    border-left: 4px solid #dc3545;
+    margin: 0 0 15px 0;
+    padding: 15px;
+    border-radius: 8px;
+    width: 100%;
+    box-sizing: border-box;
+    min-height: auto;
+    overflow: visible;
+}
+
+/* Flexbox container for book info and time */
+.overdue-content {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    width: 100%;
+    gap: 15px;
+}
+
+/* Book title with ellipsis truncation */
+.overdue-book-title {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: bold;
+    color: #dc3545;
+    min-width: 0; /* Important for flexbox text truncation */
+}
+
+/* Member info below title */
+.overdue-member-info {
+    flex: 1;
+    min-width: 0; /* Important for flexbox text truncation */
+}
+
+/* Time and badge container - far right */
+.overdue-time-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    white-space: nowrap;
+    min-width: 120px;
+    flex-shrink: 0; /* Prevent shrinking */
+}
+
+.overdue-badge {
+    background: #dc3545;
+    color: white;
+    padding: 4px 10px;
+    border-radius: 15px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-block;
+    white-space: nowrap;
+    margin-bottom: 5px;
+}
+
+.overdue-due-date {
+    font-size: 0.8rem;
+    color: #dc3545;
+    text-align: right;
+    white-space: nowrap;
+}
+
+/* Fix for overdue books card height */
+.col-lg-4 .dashboard-card {
+    min-height: 400px;
+}
+
+/* Badge styling with default Bootstrap colors */
+.badge.bg-warning {
+    background: #ffc107 !important;
+    color: #212529 !important;
+}
+
+.badge.bg-success {
+    background: #28a745 !important;
+}
+
+.badge.bg-primary {
+    background: #007bff !important;
+}
+
+/* Card content margins */
+.card-content {
+    margin: 15px 20px;
+}
+
+/* Text colors for white background */
+.text-gray-800 {
+    color: #333 !important;
+}
+
+.text-muted {
+    color: #6c757d !important;
+}
+
+/* Button styling with default Bootstrap */
+.btn-outline-primary {
+    border-color: #007bff;
+    color: #007bff;
+    background: white;
+}
+
+    .btn-outline-primary:hover {
+        background: #007bff;
+        border-color: #007bff;
+        color: white;
+    }
+
+/* Popular books cards */
+.bg-light {
+    background: #f8f9fa !important;
+    color: #333;
+    border-radius: 10px;
+}
+
+/* Statistics text colors */
+.text-xs {
+    color: #6c757d !important;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.h5 {
+    color: #333 !important;
+    font-weight: 700;
+}
+
+/* Small text styling */
+small {
+    color: #007bff !important;
+    font-weight: 500;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .custom-width-container {
+        width: 95%;
+    }
+
+    .dashboard-container {
+        padding: 10px 5px;
+    }
+
+    .dashboard-card {
+        margin: 0 0 15px 0;
+    }
+
+    .quick-action-btn {
+        min-height: 100px;
+        padding: 15px 10px;
+    }
+
+        .quick-action-btn i {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+    .col-lg-4 .dashboard-card {
+        min-height: 300px;
+    }
+
+    /* Responsive overdue items */
+    .overdue-content {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .overdue-time-container {
+        align-items: flex-start;
+        min-width: auto;
+    }
+
+    .overdue-book-title {
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+    }
+}
+
+/* Additional fixes for content alignment */
+.row {
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.col-xl-3, .col-md-6, .col-lg-8, .col-lg-4, .col-12 {
+    padding-left: 10px;
+    padding-right: 10px;
+}

@@ -1,0 +1,335 @@
+﻿@* Views/Admin/Index.cshtml *@
+@model LibraryManagementSystem.ViewModels.AdminDashboardViewModel
+@{
+    ViewData["Title"] = "Painel de Administração - Biblioteca";
+    Layout = "_AdminLayout";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+}
+
+<div class="container-fluid custom-width-container dashboard-container">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center dashboard-header">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-tachometer-alt me-2"></i>Painel de Administração
+                    </h1>
+                    <p class="mb-0">Bem-vindo ao sistema de gestão da biblioteca</p>
+                </div>
+                <div class="text-end">
+                    <small class="text-muted">
+                        Última atualização: @DateTime.Now.ToString("dd/MM/yyyy HH:mm")
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card dashboard-card h-100">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total de Livros
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TotalBooks</div>
+                            <small class="text-success">@Model.AvailableBooks disponíveis</small>
+                        </div>
+                        <div class="col-auto">
+                            <div class="card-icon bg-primary-gradient">
+                                <i class="fas fa-book"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card dashboard-card h-100">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Total de Membros
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.TotalMembers</div>
+                            <small class="text-success">@Model.ActiveMembers ativos</small>
+                        </div>
+                        <div class="col-auto">
+                            <div class="card-icon bg-success-gradient">
+                                <i class="fas fa-users"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card dashboard-card h-100">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Empréstimos Ativos
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.ActiveBorrowings</div>
+                            <small class="text-info">@Model.BooksReturnedToday devolvidos hoje</small>
+                        </div>
+                        <div class="col-auto">
+                            <div class="card-icon bg-warning-gradient">
+                                <i class="fas fa-handshake"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card dashboard-card h-100">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                Livros em Atraso
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.OverdueBooks</div>
+                            <small class="text-danger">Requerem atenção</small>
+                        </div>
+                        <div class="col-auto">
+                            <div class="card-icon bg-danger-gradient">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-bolt me-2"></i>Ações Rápidas
+                    </h6>
+                </div>
+                <div class="card-body card-content">
+                    <div class="row">
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a asp-controller="Books" asp-action="Create" class="quick-action-btn btn-primary w-100">
+                                <i class="fas fa-plus-circle"></i>
+                                <strong>Adicionar Livro</strong>
+                            </a>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a asp-controller="Members" asp-action="Create" class="quick-action-btn btn-success w-100">
+                                <i class="fas fa-user-plus"></i>
+                                <strong>Novo Membro</strong>
+                            </a>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a asp-controller="Borrowings" asp-action="Create" class="quick-action-btn btn-warning w-100">
+                                <i class="fas fa-handshake"></i>
+                                <strong>Novo Empréstimo</strong>
+                            </a>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a asp-controller="Categories" asp-action="Index" class="quick-action-btn btn-info w-100">
+                                <i class="fas fa-tags"></i>
+                                <strong>Gerir Categorias</strong>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Row -->
+    <div class="row">
+        <!-- Recent Borrowings -->
+        <div class="col-lg-8 mb-4">
+            <div class="card dashboard-card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-clock me-2"></i>Empréstimos Recentes
+                    </h6>
+                    <a asp-controller="Borrowings" asp-action="Index" class="btn btn-sm btn-outline-primary">
+                        Ver Todos
+                    </a>
+                </div>
+                <div class="card-body card-content">
+                    @if (Model.RecentBorrowings.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Livro</th>
+                                        <th>Membro</th>
+                                        <th>Data</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var borrowing in Model.RecentBorrowings)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <strong>@borrowing.Book.Title</strong><br>
+                                                <small class="text-muted">@borrowing.Book.Author</small>
+                                            </td>
+                                            <td>@borrowing.Member.Name</td>
+                                            <td>@borrowing.BorrowDate.ToString("dd/MM/yyyy")</td>
+                                            <td>
+                                                <span class="badge @(borrowing.Status == "Emprestado" ? "bg-warning" : "bg-success")">
+                                                    @borrowing.Status
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-inbox fa-3x mb-3"></i>
+                            <p>Nenhum empréstimo encontrado</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Overdue Books with Updated Layout -->
+        <div class="col-lg-4 mb-4">
+            <div class="card dashboard-card h-100">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Livros em Atraso
+                    </h6>
+                </div>
+                <div class="card-body card-content">
+                    @if (Model.OverdueList.Any())
+                    {
+                        @foreach (var overdue in Model.OverdueList)
+                        {
+                            <div class="overdue-item">
+                                <div class="overdue-content">
+                                    <div class="overdue-member-info">
+                                        <div class="overdue-book-title" title="@overdue.Book.Title">
+                                            @overdue.Book.Title
+                                        </div>
+                                        <small class="text-muted">@overdue.Member.Name</small><br>
+
+                                    </div>
+                                    <div class="overdue-time-container">
+                                        <span class="overdue-badge">
+                                            @((DateTime.Now - overdue.DueDate).Days) dias em atraso
+                                        </span>
+                                        <small class="overdue-due-date">
+                                            Venceu em @overdue.DueDate.ToString("dd/MM/yyyy")
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-check-circle fa-3x mb-3 text-success"></i>
+                            <p>Nenhum livro em atraso!</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Popular Books -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-star me-2"></i>Livros Mais Populares
+                    </h6>
+                </div>
+                <div class="card-body card-content">
+                    @if (Model.PopularBooks.Any())
+                    {
+                        <div class="row">
+                            @foreach (var popular in Model.PopularBooks)
+                            {
+                                <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                                    <div class="card h-100 border-0 bg-light">
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-book fa-2x text-primary mb-2"></i>
+                                            <h6 class="card-title">@popular.Book.Title</h6>
+                                            <p class="card-text text-muted small">@popular.Book.Author</p>
+                                            <span class="badge bg-primary">@popular.BorrowCount empréstimos</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-chart-bar fa-3x mb-3"></i>
+                            <p>Dados insuficientes para estatísticas</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Auto-refresh dashboard every 5 minutes
+        setTimeout(function() {
+            location.reload();
+        }, 300000);
+
+        // Add loading animation to quick action buttons
+        document.querySelectorAll('.quick-action-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const icon = this.querySelector('i');
+                const text = this.querySelector('strong');
+                if (icon && text) {
+                    icon.className = 'fas fa-spinner fa-spin';
+                    text.textContent = 'A Carregar...';
+                }
+            });
+        });
+
+        // Add tooltip functionality for truncated book titles
+        document.addEventListener('DOMContentLoaded', function() {
+            const truncatedTitles = document.querySelectorAll('.overdue-book-title');
+            truncatedTitles.forEach(title => {
+                if (title.scrollWidth > title.clientWidth) {
+                    title.setAttribute('title', title.textContent);
+                }
+            });
+        });
+    </script>
+}

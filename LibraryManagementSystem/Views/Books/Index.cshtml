@@ -1,0 +1,462 @@
+﻿@model IEnumerable<LibraryManagementSystem.Models.Book>
+@{
+    ViewData["Title"] = "Gestão de Livros";
+    Layout = "_AdminLayout";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+}
+
+<div class="container-fluid custom-width-container dashboard-container">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center dashboard-header">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-book me-2"></i>Gestão de Livros
+                    </h1>
+                    <p class="mb-0">Gerir o catálogo de livros da biblioteca</p>
+                </div>
+                <div class="text-end">
+                    <a asp-action="Create" class="btn btn-primary me-2">
+                        <i class="fas fa-plus me-2"></i>Adicionar Livro
+                    </a>
+                    <small class="text-muted d-block">
+                        Última atualização: @DateTime.Now.ToString("dd/MM/yyyy HH:mm")
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card dashboard-card h-100">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total de Livros
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.Count()</div>
+                            <small class="text-success">Livros registados</small>
+                        </div>
+                        <div class="col-auto">
+                            <div class="card-icon bg-primary-gradient">
+                                <i class="fas fa-book"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card dashboard-card h-100">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Livros Disponíveis
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.Count(b => b.Available)</div>
+                            <small class="text-success">Para empréstimo</small>
+                        </div>
+                        <div class="col-auto">
+                            <div class="card-icon bg-success-gradient">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card dashboard-card h-100">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Livros Emprestados
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.Count(b => !b.Available)</div>
+                            <small class="text-warning">Em circulação</small>
+                        </div>
+                        <div class="col-auto">
+                            <div class="card-icon bg-warning-gradient">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card dashboard-card h-100">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Categorias Ativas
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                @Model.SelectMany(b => b.Categories).Select(c => c.CategoryId).Distinct().Count()
+                            </div>
+                            <small class="text-info">Com livros</small>
+                        </div>
+                        <div class="col-auto">
+                            <div class="card-icon bg-info-gradient">
+                                <i class="fas fa-tags"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filter -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-search me-2"></i>Pesquisar e Filtrar Livros
+                    </h6>
+                </div>
+                <div class="card-body card-content">
+                    <form method="get">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="searchString">Pesquisar:</label>
+                                    <input type="text" name="searchString" value="@ViewData["CurrentFilter"]"
+                                           class="form-control" placeholder="Título, autor ou ISBN..." />
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="categoryId">Categoria:</label>
+                                    <select name="categoryId" class="form-control">
+                                        <option value="">Todas as categorias</option>
+                                        @foreach (var category in ViewBag.Categories as SelectList)
+                                        {
+                                            <option value="@category.Value" selected="@category.Selected">@category.Text</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="availability">Disponibilidade:</label>
+                                    <select name="availability" class="form-control">
+                                        <option value="">Todos os livros</option>
+                                        <option value="true">Apenas disponíveis</option>
+                                        <option value="false">Apenas emprestados</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label>&nbsp;</label>
+                                    <button type="submit" class="btn btn-primary d-block w-100">
+                                        <i class="fas fa-search"></i> Pesquisar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Books Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card dashboard-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-list me-2"></i>Lista de Livros (@Model.Count() livros)
+                    </h6>
+                    <div>
+                        <a asp-action="Index" asp-route-sortOrder="@ViewData["TitleSortParm"]" class="btn btn-sm btn-outline-secondary">
+                            Título @(ViewData["TitleSortParm"] == "title_desc" ? "↓" : "↑")
+                        </a>
+                        <a asp-action="Index" asp-route-sortOrder="@ViewData["AuthorSortParm"]" class="btn btn-sm btn-outline-secondary">
+                            Autor @(ViewData["AuthorSortParm"] == "author_desc" ? "↓" : "↑")
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body card-content">
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            @TempData["SuccessMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            @TempData["ErrorMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    @if (Model != null && Model.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Livro</th>
+                                        <th>ISBN</th>
+                                        <th>Categorias</th>
+                                        <th>Ano</th>
+                                        <th>Estado</th>
+                                        <th>Empréstimo Atual</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var book in Model)
+                                    {
+                                        @* FIXED: Declare variable without @{} wrapper - you're already in a code block *@
+                                        var activeBorrowing = book.Borrowings?.FirstOrDefault(b => b.Status == "Emprestado");
+
+                                        <tr class="@(activeBorrowing != null && activeBorrowing.DueDate < DateTime.Now ? "table-danger" : "")">
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="card-icon bg-primary-gradient me-3" style="width: 40px; height: 40px; font-size: 1rem;">
+                                                        <i class="fas fa-book"></i>
+                                                    </div>
+                                                    <div>
+                                                        <strong>@book.Title</strong><br>
+                                                        <small class="text-muted">@book.Author</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(book.ISBN))
+                                                {
+                                                    <span class="badge bg-secondary">@book.ISBN</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">N/A</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (book.Categories != null && book.Categories.Any())
+                                                {
+                                                    @foreach (var category in book.Categories.Take(2))
+                                                    {
+                                                        <span class="badge bg-info me-1">@category.Name</span>
+                                                    }
+                                                    @if (book.Categories.Count > 2)
+                                                    {
+                                                        <small class="text-muted">+@(book.Categories.Count - 2) mais</small>
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">Sem categoria</span>
+                                                }
+                                            </td>
+                                            <td>@(book.YearPublished?.ToString() ?? "N/A")</td>
+                                            <td>
+                                                @if (book.Available)
+                                                {
+                                                    <span class="badge bg-success">
+                                                        <i class="fas fa-check me-1"></i>Disponível
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-warning">
+                                                        <i class="fas fa-clock me-1"></i>Emprestado
+                                                    </span>
+                                                }
+
+                                                @if (activeBorrowing == null)
+                                                {
+                                                    <button class="btn btn-sm btn-outline-secondary ms-1"
+                                                            onclick="toggleAvailability('@book.BookId', @book.Available.ToString().ToLower())"
+                                                            title="Alterar disponibilidade manualmente">
+                                                        <i class="fas fa-toggle-@(book.Available ? "on" : "off")"></i>
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <button class="btn btn-sm btn-outline-secondary ms-1" disabled
+                                                            title="Não é possível alterar - livro emprestado">
+                                                        <i class="fas fa-lock"></i>
+                                                    </button>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (activeBorrowing != null)
+                                                {
+                                                    <div>
+                                                        <strong>@(activeBorrowing.Member?.Name ?? "N/A")</strong><br>
+                                                        <small class="text-muted">
+                                                            @if (activeBorrowing.DueDate < DateTime.Now)
+                                                            {
+                                                                <span class="text-danger">
+                                                                    <i class="fas fa-exclamation-triangle me-1"></i>
+                                                                    @((DateTime.Now - activeBorrowing.DueDate).Days) dias em atraso
+                                                                </span>
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="text-info">
+                                                                    Vence: @activeBorrowing.DueDate.ToString("dd/MM/yyyy")
+                                                                </span>
+                                                            }
+                                                        </small>
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">-</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <a asp-action="Details" asp-route-id="@book.BookId"
+                                                       class="btn btn-sm btn-outline-info" title="Detalhes">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    <a asp-action="Edit" asp-route-id="@book.BookId"
+                                                       class="btn btn-sm btn-outline-primary" title="Editar">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    @if (book.Available)
+                                                    {
+                                                        <a asp-controller="Borrowings" asp-action="Create" asp-route-bookId="@book.BookId"
+                                                           class="btn btn-sm btn-outline-success" title="Emprestar">
+                                                            <i class="fas fa-handshake"></i>
+                                                        </a>
+                                                    }
+                                                    else if (activeBorrowing != null)
+                                                    {
+                                                        <form asp-controller="Borrowings" asp-action="Return" method="post" class="d-inline">
+                                                            <input type="hidden" name="id" value="@activeBorrowing.BorrowingId" />
+                                                            <button type="submit" class="btn btn-sm btn-outline-warning"
+                                                                    onclick="return confirm('Confirma a devolução deste livro?')"
+                                                                    title="Devolver">
+                                                                <i class="fas fa-undo"></i>
+                                                            </button>
+                                                        </form>
+                                                    }
+                                                    <a asp-action="BorrowingHistory" asp-route-id="@book.BookId"
+                                                       class="btn btn-sm btn-outline-secondary" title="Histórico">
+                                                        <i class="fas fa-history"></i>
+                                                    </a>
+                                                    @if (book.Available && !book.Borrowings.Any())
+                                                    {
+                                                        <a asp-action="Delete" asp-route-id="@book.BookId"
+                                                           class="btn btn-sm btn-outline-danger" title="Eliminar"
+                                                           onclick="return confirm('Tem certeza que deseja eliminar este livro?')">
+                                                            <i class="fas fa-trash"></i>
+                                                        </a>
+                                                    }
+                                                    else
+                                                    {
+                                                        <button class="btn btn-sm btn-outline-secondary" disabled
+                                                                title="Não é possível eliminar - tem histórico de empréstimos">
+                                                            <i class="fas fa-lock"></i>
+                                                        </button>
+                                                    }
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-book fa-3x mb-3"></i>
+                            <h5>Nenhum livro encontrado</h5>
+                            <p>Não foram encontrados livros com os critérios especificados.</p>
+                            <a asp-action="Create" class="btn btn-primary">
+                                <i class="fas fa-plus me-1"></i>Adicionar Primeiro Livro
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // FIXED: Enhanced toggle availability with proper validation
+        function toggleAvailability(bookId, currentStatus) {
+            const action = currentStatus ? 'indisponível' : 'disponível';
+            if (confirm(`Tem certeza que deseja marcar este livro como ${action}?\n\nNota: Esta ação só deve ser usada para manutenção manual.`)) {
+                fetch('@Url.Action("ToggleAvailability", "Books")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    body: JSON.stringify({ id: bookId })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Show success message
+                        const alertDiv = document.createElement('div');
+                        alertDiv.className = 'alert alert-success alert-dismissible fade show';
+                        alertDiv.innerHTML = `
+                            <i class="fas fa-check me-2"></i>${data.message}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        `;
+                        document.querySelector('.card-body').insertBefore(alertDiv, document.querySelector('.table-responsive'));
+
+                        // Reload page to reflect changes
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1500);
+                    } else {
+                        // Show error message
+                        const alertDiv = document.createElement('div');
+                        alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+                        alertDiv.innerHTML = `
+                            <i class="fas fa-exclamation-triangle me-2"></i>${data.message}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        `;
+                        document.querySelector('.card-body').insertBefore(alertDiv, document.querySelector('.table-responsive'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    alert('Erro ao alterar disponibilidade do livro');
+                });
+            }
+        }
+
+        // Add loading states to action buttons
+        document.querySelectorAll('.btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (this.type === 'submit' && !this.disabled) {
+                    const icon = this.querySelector('i');
+                    if (icon) {
+                        icon.className = 'fas fa-spinner fa-spin';
+                    }
+                }
+            });
+        });
+    </script>
+}

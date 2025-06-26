@@ -1,10 +1,111 @@
-﻿@page
+﻿@* Areas/Identity/Pages/Account/AccessDenied.cshtml *@
+@page
 @model AccessDeniedModel
 @{
-    ViewData["Title"] = "Access denied";
+    ViewData["Title"] = "Acesso Negado - Sistema de Gestão de Biblioteca";
+    Layout = "_AuthLayout";
 }
 
-<header>
-    <h1 class="text-danger">@ViewData["Title"]</h1>
-    <p class="text-danger">You do not have access to this resource.</p>
-</header>
+@section Styles {
+    <style>
+        .access-denied-wrapper {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .access-denied-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+            padding: 60px 40px;
+        }
+
+        .access-denied-icon {
+            font-size: 4rem;
+            color: #dc3545;
+            margin-bottom: 20px;
+        }
+
+        .btn-return {
+            background: linear-gradient(45deg, #2196F3, #21CBF3);
+            border: none;
+            border-radius: 50px;
+            padding: 12px 30px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            color: white;
+            text-decoration: none;
+        }
+
+            .btn-return:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 20px rgba(33, 150, 243, 0.3);
+                color: white;
+            }
+    </style>
+}
+
+<div class="access-denied-wrapper">
+    <div class="access-denied-card">
+        <div class="access-denied-icon">
+            <i class="fas fa-ban"></i>
+        </div>
+
+        <h1 class="text-danger mb-4">Acesso Negado</h1>
+
+        <p class="text-muted mb-4">
+            Não tem permissões para aceder a este recurso. Esta área está restrita a utilizadores com privilégios específicos.
+        </p>
+
+        <div class="alert alert-warning mb-4">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Nota:</strong> Se acredita que deveria ter acesso a esta funcionalidade,
+            contacte o administrador do sistema.
+        </div>
+
+        @if (User.Identity?.IsAuthenticated ?? false)
+        {
+            <div class="mb-4">
+                <p class="text-muted">
+                    <i class="fas fa-user me-2"></i>
+                    Utilizador atual: <strong>@User.Identity.Name</strong>
+                </p>
+            </div>
+
+            @if (User.IsInRole("Bibliotecário"))
+            {
+                <a asp-controller="Admin" asp-action="Index" class="btn-return btn-lg me-3">
+                    <i class="fas fa-tachometer-alt me-2"></i>Painel de Administração
+                </a>
+            }
+            else
+            {
+                <a asp-controller="Home" asp-action="Index" class="btn-return btn-lg me-3">
+                    <i class="fas fa-home me-2"></i>Página Inicial
+                </a>
+            }
+
+            <form class="d-inline" asp-area="Identity" asp-page="/Account/Logout" method="post">
+                <button type="submit" class="btn btn-outline-danger btn-lg">
+                    <i class="fas fa-sign-out-alt me-2"></i>Terminar Sessão
+                </button>
+            </form>
+        }
+        else
+        {
+            <a asp-area="Identity" asp-page="/Account/Login" class="btn-return btn-lg">
+                <i class="fas fa-sign-in-alt me-2"></i>Iniciar Sessão
+            </a>
+        }
+    </div>
+</div>

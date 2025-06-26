@@ -1,0 +1,137 @@
+﻿@model LibraryManagementSystem.Models.Book
+@{
+    ViewData["Title"] = "Adicionar Livro";
+    Layout = "_AdminLayout";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+}
+
+<div class="container-fluid custom-width-container dashboard-container">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center dashboard-header">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-plus me-2"></i>Adicionar Novo Livro
+                    </h1>
+                    <p class="mb-0">Adicionar um novo livro ao catálogo da biblioteca</p>
+                </div>
+                <div>
+                    <a asp-action="Index" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Voltar à Lista
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-book me-2"></i>Informações do Livro
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Create" method="post">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="form-group mb-3">
+                                    <label asp-for="Title" class="form-label">Título *</label>
+                                    <input asp-for="Title" class="form-control" placeholder="Digite o título do livro" />
+                                    <span asp-validation-for="Title" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label asp-for="YearPublished" class="form-label">Ano de Publicação *</label>
+                                    <input asp-for="YearPublished" class="form-control" type="number" min="1000" max="@DateTime.Now.Year" />
+                                    <span asp-validation-for="YearPublished" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="Author" class="form-label">Autor *</label>
+                                    <input asp-for="Author" class="form-control" placeholder="Nome do autor" />
+                                    <span asp-validation-for="Author" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="ISBN" class="form-label">ISBN *</label>
+                                    <input asp-for="ISBN" class="form-control" placeholder="978-XXXXXXXXXX" />
+                                    <span asp-validation-for="ISBN" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- FIXED: Multiple category selection for many-to-many relationship -->
+                        <div class="form-group mb-3">
+                            <label for="selectedCategories" class="form-label">Categorias *</label>
+                            <select name="selectedCategories" class="form-control" multiple size="5">
+                                @foreach (var category in ViewBag.Categories as MultiSelectList)
+                                {
+                                    <option value="@category.Value" selected="@category.Selected">@category.Text</option>
+                                }
+                            </select>
+                            <small class="form-text text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Mantenha pressionado Ctrl (Windows) ou Cmd (Mac) para selecionar múltiplas categorias
+                            </small>
+                        </div>
+
+                        <div class="form-check mb-4">
+                            <input asp-for="Available" class="form-check-input" />
+                            <label asp-for="Available" class="form-check-label">
+                                Livro disponível para empréstimo
+                            </label>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a asp-action="Index" class="btn btn-secondary me-md-2">
+                                <i class="fas fa-times me-2"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Guardar Livro
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Enhance the multiple select with better styling
+        document.addEventListener('DOMContentLoaded', function() {
+            const selectElement = document.querySelector('select[name="selectedCategories"]');
+            if (selectElement) {
+                selectElement.classList.add('form-select');
+
+                // Add visual feedback for multiple selection
+                selectElement.addEventListener('change', function() {
+                    const selectedCount = this.selectedOptions.length;
+                    const helpText = this.nextElementSibling;
+                    if (selectedCount > 0) {
+                        helpText.innerHTML = `<i class="fas fa-check-circle text-success me-1"></i>${selectedCount} categoria(s) selecionada(s)`;
+                    } else {
+                        helpText.innerHTML = `<i class="fas fa-info-circle me-1"></i>Mantenha pressionado Ctrl (Windows) ou Cmd (Mac) para selecionar múltiplas categorias`;
+                    }
+                });
+            }
+        });
+    </script>
+}

@@ -1,0 +1,219 @@
+﻿@* Views/Categories/Index.cshtml *@
+@model IEnumerable<LibraryManagementSystem.Models.Category>
+@{
+    ViewData["Title"] = "Gestão de Categorias";
+    Layout = "_AdminLayout";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+}
+
+<div class="container-fluid custom-width-container dashboard-container">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center dashboard-header">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-tags me-2"></i>Gestão de Categorias
+                    </h1>
+                    <p class="mb-0">Gerir categorias de livros da biblioteca</p>
+                </div>
+                <div class="text-end">
+                    <small class="text-muted">
+                        Última atualização: @DateTime.Now.ToString("dd/MM/yyyy HH:mm")
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card dashboard-card h-100">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total de Categorias
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.Count()</div>
+                            <small class="text-success">Categorias registadas</small>
+                        </div>
+                        <div class="col-auto">
+                            <div class="card-icon bg-primary-gradient">
+                                <i class="fas fa-tags"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card dashboard-card h-100">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Total de Livros
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.Sum(c => c.Books.Count)</div>
+                            <small class="text-success">Em todas as categorias</small>
+                        </div>
+                        <div class="col-auto">
+                            <div class="card-icon bg-success-gradient">
+                                <i class="fas fa-book"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card dashboard-card h-100">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Média por Categoria
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                @(Model.Any() ? Math.Round(Model.Average(c => c.Books.Count), 1) : 0)
+                            </div>
+                            <small class="text-warning">Livros por categoria</small>
+                        </div>
+                        <div class="col-auto">
+                            <div class="card-icon bg-warning-gradient">
+                                <i class="fas fa-chart-bar"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card dashboard-card h-100">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Categoria Mais Popular
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                @(Model.Any() ? Model.OrderByDescending(c => c.Books.Count).First().Books.Count : 0)
+                            </div>
+                            <small class="text-info">
+                                @(Model.Any() ? Model.OrderByDescending(c => c.Books.Count).First().Name : "N/A")
+                            </small>
+                        </div>
+                        <div class="col-auto">
+                            <div class="card-icon bg-info-gradient">
+                                <i class="fas fa-star"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Categories Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card dashboard-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-list me-2"></i>Lista de Categorias (@Model.Count() categorias)
+                    </h6>
+                </div>
+                <div class="card-body card-content">
+                    @if (Model != null && Model.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Categoria</th>
+                                        <th>Descrição</th>
+                                        <th>Número de Livros</th>
+                                        <th>Livros Mais Populares</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var category in Model.OrderBy(c => c.Name))
+                                    {
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="card-icon bg-info-gradient me-3" style="width: 40px; height: 40px; font-size: 1rem;">
+                                                        <i class="fas fa-tag"></i>
+                                                    </div>
+                                                    <div>
+                                                        <strong>@category.Name</strong>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(category.Description))
+                                                {
+                                                    <span class="text-gray-800">@category.Description</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted fst-italic">Sem descrição</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-primary">@category.Books.Count livros</span>
+                                            </td>
+                                            <td>
+                                                @if (category.Books.Any())
+                                                {
+                                                    var topBooks = category.Books.Take(2);
+                                                    <div>
+                                                        @foreach (var book in topBooks)
+                                                        {
+                                                            <small class="d-block text-muted">
+                                                                <i class="fas fa-book me-1"></i>@book.Title
+                                                            </small>
+                                                        }
+                                                        @if (category.Books.Count > 2)
+                                                        {
+                                                            <small class="text-info">
+                                                                <i class="fas fa-plus me-1"></i>Mais @(category.Books.Count - 2) livros...
+                                                            </small>
+                                                        }
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">Nenhum livro</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-tags fa-3x mb-3"></i>
+                            <h5>Nenhuma categoria encontrada</h5>
+                            <p>Não existem categorias criadas no sistema.</p>
+                            <a asp-action="Create" class="btn btn-primary">
+                                <i class="fas fa-plus me-1"></i>Criar Primeira Categoria
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

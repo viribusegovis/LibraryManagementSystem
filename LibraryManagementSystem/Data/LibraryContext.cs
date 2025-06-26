@@ -43,19 +43,12 @@ namespace LibraryManagementSystem.Data
                 .Property(br => br.BookReviewId)
                 .HasDefaultValueSql("NEWID()");
 
-            // Configure optional relationship between Member and IdentityUser
+            // Configure one-to-many relationships
             modelBuilder.Entity<Member>()
                 .HasOne(m => m.User)
                 .WithMany()
                 .HasForeignKey(m => m.UserId)
                 .OnDelete(DeleteBehavior.SetNull);
-
-            // Configure other relationships
-            modelBuilder.Entity<Book>()
-                .HasOne(b => b.Category)
-                .WithMany(c => c.Books)
-                .HasForeignKey(b => b.CategoryId)
-                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<Borrowing>()
                 .HasOne(br => br.Book)
@@ -71,15 +64,29 @@ namespace LibraryManagementSystem.Data
 
             modelBuilder.Entity<BookReview>()
                 .HasOne(br => br.Book)
-                .WithMany(b => b.Reviews)
+                .WithMany(b => b.BookReviews)
                 .HasForeignKey(br => br.BookId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<BookReview>()
                 .HasOne(br => br.Member)
-                .WithMany(m => m.Reviews)
+                .WithMany(m => m.BookReviews)
                 .HasForeignKey(br => br.MemberId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure many-to-many relationship with correct property names
+            modelBuilder.Entity<Book>()
+                .HasMany(b => b.Categories)
+                .WithMany(c => c.Books)
+                .UsingEntity<Dictionary<string, object>>(
+                    "BookCategory",
+                    j => j.HasOne<Category>().WithMany().HasForeignKey("CategoryId"),
+                    j => j.HasOne<Book>().WithMany().HasForeignKey("BookId"),
+                    j =>
+                    {
+                        j.HasKey("BookId", "CategoryId");
+                        j.ToTable("BookCategories");
+                    });
         }
     }
 }

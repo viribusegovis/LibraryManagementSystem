@@ -1,0 +1,109 @@
+﻿@model List<LibraryManagementSystem.ViewModels.BookViewModel>
+@{
+    ViewData["Title"] = "Catálogo de Livros";
+    Layout = "_Layout";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/member-dashboard.css" asp-append-version="true" />
+}
+
+<div class="container-fluid custom-width-container member-container">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="welcome-header text-center py-4">
+                <h1 class="display-5">
+                    <i class="fas fa-book me-3"></i>Catálogo de Livros
+                </h1>
+                <p class="lead">Explore nossa coleção de livros disponíveis</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="row mb-4">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-body">
+                    <form method="get">
+                        <div class="input-group input-group-lg">
+                            <input type="text" name="search" class="form-control"
+                                   placeholder="Pesquisar por título, autor ou categoria..."
+                                   value="@ViewData["CurrentFilter"]">
+                            <button class="btn btn-primary" type="submit">
+                                <i class="fas fa-search"></i> Pesquisar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Books Grid -->
+    <div class="row">
+        @if (Model != null && Model.Any())
+        {
+            @foreach (var bookViewModel in Model)
+            {
+                <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+                    <div class="card book-card h-100">
+                        <div class="card-body">
+                            <div class="text-center mb-3">
+                                <i class="fas fa-book fa-3x text-primary mb-2"></i>
+                                <h6 class="card-title font-weight-bold">@bookViewModel.Book.Title</h6>
+                                <p class="text-muted mb-1">@bookViewModel.Book.Author</p>
+                                <small class="text-muted">
+                                    <!-- FIXED: Display multiple categories from Categories collection -->
+                                    <i class="fas fa-tag me-1"></i>
+                                    @if (bookViewModel.Book.Categories != null && bookViewModel.Book.Categories.Any())
+                                    {
+                                        @string.Join(", ", bookViewModel.Book.Categories.Select(c => c.Name))
+                                    }
+                                    else
+                                    {
+                                        <text>Sem categoria</text>
+                                    }
+                                    <br>
+                                    <i class="fas fa-calendar me-1"></i>@bookViewModel.Book.YearPublished
+                                </small>
+                            </div>
+
+                            <!-- Book Rating Display -->
+                            <div class="book-rating-display mb-3">
+                                <div class="d-flex justify-content-center gap-3">
+                                    <span class="rating-display">
+                                        <i class="fas fa-thumbs-up text-success"></i>
+                                        <span>@bookViewModel.LikesCount</span>
+                                    </span>
+                                    <span class="rating-display">
+                                        <i class="fas fa-thumbs-down text-danger"></i>
+                                        <span>@bookViewModel.DislikesCount</span>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge bg-success">Disponível</span>
+                                <small class="text-muted">
+                                    @bookViewModel.Comments.Count comentários
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col-12">
+                <div class="text-center py-5">
+                    <i class="fas fa-search fa-4x text-muted mb-3"></i>
+                    <h5 class="text-muted">Nenhum livro encontrado</h5>
+                    <p class="text-muted">Tente ajustar os critérios de pesquisa.</p>
+                </div>
+            </div>
+        }
+    </div>
+</div>

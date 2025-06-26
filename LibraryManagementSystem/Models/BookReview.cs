@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿// Models/BookReview.cs
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace LibraryManagementSystem.Models
@@ -25,8 +26,9 @@ namespace LibraryManagementSystem.Models
         [Display(Name = "Comentário")]
         public string? Comment { get; set; }
 
-        [Display(Name = "Gostei")]
-        public bool? IsLiked { get; set; } // true = like, false = dislike, null = no reaction
+        // FIXED PROPERTY NAME
+        [Display(Name = "É Like")]
+        public bool IsLike { get; set; } // Changed from IsLiked to IsLike to match your controller code
 
         [Display(Name = "Data da Avaliação")]
         public DateTime ReviewDate { get; set; } = DateTime.Now;

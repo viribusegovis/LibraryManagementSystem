@@ -1,0 +1,448 @@
+﻿@* Views/Books/Details.cshtml *@
+@model LibraryManagementSystem.Models.Book
+@{
+    ViewData["Title"] = "Detalhes do Livro";
+    Layout = "_AdminLayout";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+}
+
+<div class="container-fluid custom-width-container dashboard-container">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center dashboard-header">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-book me-2"></i>Detalhes do Livro
+                    </h1>
+                    <p class="mb-0">Informações completas do livro da biblioteca</p>
+                </div>
+                <div class="text-end">
+                    <a asp-action="Index" class="btn btn-secondary me-2">
+                        <i class="fas fa-arrow-left me-1"></i>Voltar à Lista
+                    </a>
+                    <a asp-action="Edit" asp-route-id="@Model.BookId" class="btn btn-primary">
+                        <i class="fas fa-edit me-1"></i>Editar
+                    </a>
+                    @if (Model.Available)
+                    {
+                        <a asp-controller="Borrowings" asp-action="Create" asp-route-bookId="@Model.BookId" class="btn btn-success">
+                            <i class="fas fa-handshake me-1"></i>Emprestar
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Book Information Cards -->
+    <div class="row mb-4">
+        <!-- Book Details -->
+        <div class="col-lg-8 mb-4">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-info-circle me-2"></i>Informações do Livro
+                    </h6>
+                </div>
+                <div class="card-body card-content">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <strong>Título:</strong><br>
+                            <span class="text-gray-800">@Model.Title</span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <strong>Autor:</strong><br>
+                            <span class="text-gray-800">@Model.Author</span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <strong>ISBN:</strong><br>
+                            <span class="badge bg-primary">@(Model.ISBN ?? "Não informado")</span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <strong>Ano de Publicação:</strong><br>
+                            <i class="fas fa-calendar text-info me-1"></i>
+                            <span class="text-gray-800">@(Model.YearPublished?.ToString() ?? "Não informado")</span>
+                        </div>
+                        <div class="col-12 mb-3">
+                            <strong>Categorias:</strong><br>
+                            @if (Model.Categories != null && Model.Categories.Any())
+                            {
+                                @foreach (var category in Model.Categories)
+                                {
+                                    <span class="badge bg-info me-1">
+                                        <i class="fas fa-tag me-1"></i>@category.Name
+                                    </span>
+                                }
+                            }
+                            else
+                            {
+                                <span class="text-muted">Sem categorias atribuídas</span>
+                            }
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <strong>Data de Criação:</strong><br>
+                            <i class="fas fa-plus-circle text-success me-1"></i>
+                            <span class="text-gray-800">@Model.CreatedDate.ToString("dd/MM/yyyy HH:mm")</span>
+                        </div>
+                        <!-- FIXED: Enhanced availability status with single-copy logic -->
+                        <div class="col-md-6 mb-3">
+                            <strong>Estado do Livro:</strong><br>
+                            @{
+                                var activeBorrowing = Model.Borrowings.FirstOrDefault(b => b.Status == "Emprestado");
+                            }
+                            @if (Model.Available)
+                            {
+                                <span class="badge bg-success fs-6">
+                                    <i class="fas fa-check me-1"></i>Disponível para Empréstimo
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning fs-6">
+                                    <i class="fas fa-clock me-1"></i>Atualmente Emprestado
+                                </span>
+                                @if (activeBorrowing != null)
+                                {
+                                    <br>
+
+                                    <small class="text-muted">
+                                        Emprestado a <strong>@activeBorrowing.Member.Name</strong> até @activeBorrowing.DueDate.ToString("dd/MM/yyyy")
+                                        @if (activeBorrowing.DueDate < DateTime.Now)
+                                        {
+                                            <span class="text-danger">
+                                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                                (@((DateTime.Now - activeBorrowing.DueDate).Days) dias em atraso)
+                                            </span>
+                                        }
+                                    </small>
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics and Reviews -->
+        <div class="col-lg-4 mb-4">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-chart-bar me-2"></i>Estatísticas e Avaliações
+                    </h6>
+                </div>
+                <div class="card-body card-content">
+                    <div class="text-center mb-3">
+                        <div class="card-icon @(Model.Available ? "bg-success-gradient" : "bg-warning-gradient") mx-auto mb-2">
+                            <i class="fas fa-@(Model.Available ? "check" : "clock")"></i>
+                        </div>
+                        <span class="badge @(Model.Available ? "bg-success" : "bg-warning") fs-6">
+                            @(Model.Available ? "Livro Disponível" : "Livro Emprestado")
+                        </span>
+
+                        <!-- FIXED: Show current borrower info if borrowed -->
+                        @if (!Model.Available && activeBorrowing != null)
+                        {
+                            <div class="mt-2">
+                                <small class="text-muted d-block">Emprestado a:</small>
+                                <strong class="text-gray-800">@activeBorrowing.Member.Name</strong>
+                                <br><small class="text-muted">Cartão: @activeBorrowing.Member.CardNumber</small>
+                            </div>
+                        }
+                    </div>
+
+                    <hr>
+
+                    <div class="row text-center">
+                        <div class="col-12 mb-3">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Avaliações Positivas
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                @Model.BookReviews.Count(r => r.IsLike)
+                            </div>
+                        </div>
+                        <div class="col-12 mb-3">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                Avaliações Negativas
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                @Model.BookReviews.Count(r => !r.IsLike)
+                            </div>
+                        </div>
+                        <div class="col-12 mb-3">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Total de Empréstimos
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                @Model.Borrowings.Count()
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Empréstimos Ativos
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                @Model.Borrowings.Count(b => b.Status == "Emprestado")
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Borrowing History -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card dashboard-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-history me-2"></i>Histórico de Empréstimos (@Model.Borrowings.Count() registos)
+                    </h6>
+                    <!-- FIXED: Only show new borrowing button if book is available -->
+                    @if (Model.Available)
+                    {
+                        <a asp-controller="Borrowings" asp-action="Create" asp-route-bookId="@Model.BookId"
+                           class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-plus me-1"></i>Novo Empréstimo
+                        </a>
+                    }
+                    else
+                    {
+                        <span class="badge bg-warning">
+                            <i class="fas fa-clock me-1"></i>Livro atualmente emprestado
+                        </span>
+                    }
+                </div>
+                <div class="card-body card-content">
+                    @if (Model.Borrowings != null && Model.Borrowings.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Membro</th>
+                                        <th>Data Empréstimo</th>
+                                        <th>Data Limite</th>
+                                        <th>Data Devolução</th>
+                                        <th>Estado</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var borrowing in Model.Borrowings.OrderByDescending(b => b.BorrowDate))
+                                    {
+                                        <tr class="@(borrowing.Status == "Emprestado" && borrowing.DueDate < DateTime.Now ? "table-danger" : "")">
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="card-icon bg-success-gradient me-3" style="width: 35px; height: 35px; font-size: 0.9rem;">
+                                                        @borrowing.Member.Name.Substring(0, 1).ToUpper()
+                                                    </div>
+                                                    <div>
+                                                        <strong>@borrowing.Member.Name</strong><br>
+                                                        <small class="text-muted">Cartão: @borrowing.Member.CardNumber</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>@borrowing.BorrowDate.ToString("dd/MM/yyyy")</td>
+                                            <td>@borrowing.DueDate.ToString("dd/MM/yyyy")</td>
+                                            <td>
+                                                @(borrowing.ReturnDate?.ToString("dd/MM/yyyy") ?? "-")
+                                            </td>
+                                            <td>
+                                                @if (borrowing.Status == "Emprestado" && borrowing.DueDate < DateTime.Now)
+                                                {
+                                                    <span class="badge bg-danger">
+                                                        Em Atraso (@((DateTime.Now - borrowing.DueDate).Days) dias)
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge @(borrowing.Status == "Emprestado" ? "bg-warning" : "bg-success")">
+                                                        @borrowing.Status
+                                                    </span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <a asp-controller="Borrowings" asp-action="Details" asp-route-id="@borrowing.BorrowingId"
+                                                       class="btn btn-sm btn-outline-info" title="Detalhes">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    <!-- FIXED: Only show return button for active borrowings -->
+                                                    @if (borrowing.Status == "Emprestado")
+                                                    {
+                                                        <form asp-controller="Borrowings" asp-action="Return" method="post" class="d-inline">
+                                                            <input type="hidden" name="id" value="@borrowing.BorrowingId" />
+                                                            <button type="submit" class="btn btn-sm btn-outline-success"
+                                                                    onclick="return confirm('Confirma a devolução deste livro?\n\nEsta ação irá marcar o livro como disponível novamente.')"
+                                                                    title="Devolver Livro">
+                                                                <i class="fas fa-undo"></i>
+                                                            </button>
+                                                        </form>
+                                                    }
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-handshake fa-3x mb-3"></i>
+                            <h5>Nenhum empréstimo registado</h5>
+                            <p>Este livro ainda não foi emprestado.</p>
+                            @if (Model.Available)
+                            {
+                                <a asp-controller="Borrowings" asp-action="Create" asp-route-bookId="@Model.BookId"
+                                   class="btn btn-primary">
+                                    <i class="fas fa-plus me-1"></i>Criar Primeiro Empréstimo
+                                </a>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reviews and Comments -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-comments me-2"></i>Avaliações e Comentários (@Model.BookReviews.Count() avaliações)
+                    </h6>
+                </div>
+                <div class="card-body card-content">
+                    @if (Model.BookReviews != null && Model.BookReviews.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Membro</th>
+                                        <th>Avaliação</th>
+                                        <th>Comentário</th>
+                                        <th>Data</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var review in Model.BookReviews.OrderByDescending(r => r.ReviewDate))
+                                    {
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="card-icon bg-info-gradient me-3" style="width: 35px; height: 35px; font-size: 0.9rem;">
+                                                        @review.Member.Name.Substring(0, 1).ToUpper()
+                                                    </div>
+                                                    <div>
+                                                        <strong>@review.Member.Name</strong><br>
+                                                        <small class="text-muted">@review.Member.CardNumber</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge @(review.IsLike ? "bg-success" : "bg-danger")">
+                                                    <i class="fas fa-thumbs-@(review.IsLike ? "up" : "down") me-1"></i>
+                                                    @(review.IsLike ? "Gosto" : "Não Gosto")
+                                                </span>
+                                            </td>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(review.Comment))
+                                                {
+                                                    <span class="text-gray-800">@review.Comment</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted fst-italic">Sem comentário</span>
+                                                }
+                                            </td>
+                                            <td>@review.ReviewDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-star fa-3x mb-3"></i>
+                            <h5>Nenhuma avaliação registada</h5>
+                            <p>Este livro ainda não foi avaliado pelos membros.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // FIXED: Enhanced confirmation for book returns
+        document.querySelectorAll('form[asp-action="Return"]').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                if (!confirm('Tem certeza que deseja marcar este livro como devolvido?\n\nEsta ação irá:\n• Marcar o empréstimo como devolvido\n• Tornar o livro disponível para novos empréstimos')) {
+                    e.preventDefault();
+                }
+            });
+        });
+
+        // Add loading state to action buttons
+        document.querySelectorAll('.btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (this.type === 'submit') {
+                    const icon = this.querySelector('i');
+                    const originalClass = icon.className;
+                    if (icon) {
+                        icon.className = 'fas fa-spinner fa-spin';
+                        // Restore original icon after 3 seconds if still visible
+                        setTimeout(() => {
+                            if (icon.className.includes('fa-spinner')) {
+                                icon.className = originalClass;
+                            }
+                        }, 3000);
+                    }
+                }
+            });
+        });
+
+        // FIXED: Add visual feedback for availability status
+        document.addEventListener('DOMContentLoaded', function() {
+            const isAvailable = @Model.Available.ToString().ToLower();
+            const statusCard = document.querySelector('.card-icon');
+
+            if (!isAvailable && statusCard) {
+                // Add subtle animation for borrowed books
+                statusCard.style.animation = 'pulse 2s infinite';
+            }
+        });
+    </script>
+
+    <style>
+        @@keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.7;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+    </style>
+}

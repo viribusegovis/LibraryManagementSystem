@@ -1,8 +1,354 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@* Views/Home/Index.cshtml - Simplified without Livros Disponíveis tab *@
+@model LibraryManagementSystem.ViewModels.MemberDashboardViewModel
+@{
+    ViewData["Title"] = "Biblioteca - Minha Área";
+    Layout = "_Layout";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+@section Styles {
+    <link rel="stylesheet" href="~/css/member-dashboard.css" asp-append-version="true" />
+    <style>
+        .rating-display {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 10px;
+            background: rgba(0,0,0,0.05);
+            border-radius: 15px;
+            font-size: 0.9rem;
+        }
+
+        .evaluation-restricted {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .can-evaluate {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+
+        .loading-spinner {
+            text-align: center;
+            padding: 50px;
+        }
+    </style>
+}
+
+<div class="container-fluid custom-width-container member-container">
+    <!-- Welcome Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="welcome-header text-center py-5">
+                <h1 class="display-5">
+                    <i class="fas fa-user-circle me-3"></i>Minha Biblioteca
+                </h1>
+                @if (Model.Member != null)
+                {
+                    <p class="lead">Bem-vindo, @Model.Member.Name!</p>
+                    <p class="mb-0">Cartão: @Model.Member.CardNumber | Membro desde @Model.Member.MembershipDate.ToString("dd/MM/yyyy")</p>
+                }
+                else
+                {
+                    <p class="lead">Bem-vindo ao sistema de biblioteca!</p>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Simplified Bootstrap Tabs Navigation -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="member-nav">
+                <div class="card-body">
+                    <ul class="nav nav-pills justify-content-center" id="memberTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link @(Model.CurrentTab == "borrowed" ? "active" : "")"
+                                    id="borrowed-tab" data-tab="borrowed" type="button">
+                                <i class="fas fa-book-reader me-2"></i>Meus Empréstimos
+                                @if (Model.Member?.Borrowings?.Count(b => b.Status == "Emprestado") > 0)
+                                {
+                                    <span class="badge bg-success ms-1">@Model.Member.Borrowings.Count(b => b.Status == "Emprestado")</span>
+                                }
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link @(Model.CurrentTab == "overdue" ? "active" : "")"
+                                    id="overdue-tab" data-tab="overdue" type="button">
+                                <i class="fas fa-exclamation-triangle me-2"></i>Em Atraso
+                                @{
+                                    var overdueCount = Model.Member?.Borrowings?.Count(b => b.Status == "Emprestado" && b.DueDate < DateTime.Now) ?? 0;
+                                }
+                                @if (overdueCount > 0)
+                                {
+                                    <span class="badge bg-danger ms-1">@overdueCount</span>
+                                }
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab Content Area -->
+    <div id="tabContent">
+        @await Html.PartialAsync("_TabContent", Model)
+    </div>
 </div>
+
+<!-- Comment Modal -->
+<div class="modal fade" id="commentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Adicionar Comentário</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="commentForm">
+                    <input type="hidden" id="commentBookId" />
+                    <div class="mb-3">
+                        <label for="commentText" class="form-label">Comentário:</label>
+                        <textarea id="commentText" class="form-control" rows="3"
+                                  placeholder="Partilhe a sua opinião sobre este livro..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Avaliação:</label>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-outline-success" onclick="setRating(true)">
+                                <i class="fas fa-thumbs-up"></i> Gosto
+                            </button>
+                            <button type="button" class="btn btn-outline-danger" onclick="setRating(false)">
+                                <i class="fas fa-thumbs-down"></i> Não Gosto
+                            </button>
+                        </div>
+                        <input type="hidden" id="commentRating" />
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="submitComment()">Enviar Comentário</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/lib/microsoft-signalr/signalr.min.js"></script>
+    <script>
+        // Anti-forgery token for AJAX requests
+        const token = $('input[name="__RequestVerificationToken"]').val();
+
+        // Simplified AJAX Tab Loading Function
+        function loadTabContent(tabName) {
+            // Show loading spinner
+            $('#tabContent').html('<div class="loading-spinner"><i class="fas fa-spinner fa-spin fa-2x"></i><p>A Carregar...</p></div>');
+
+            // Update active tab
+            $('#memberTabs .nav-link').removeClass('active');
+            $(`#${tabName}-tab`).addClass('active');
+
+            // Load content via AJAX
+            $.get('@Url.Action("GetTabContent", "Home")', { tab: tabName })
+                .done(function(data) {
+                    $('#tabContent').html(data);
+                })
+                .fail(function() {
+                    $('#tabContent').html('<div class="alert alert-danger">Erro ao carregar conteúdo. Tente novamente.</div>');
+                });
+        }
+
+        // Tab click event handlers
+        document.addEventListener('DOMContentLoaded', function() {
+            const tabButtons = document.querySelectorAll('#memberTabs button[data-tab]');
+            tabButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const tabName = this.getAttribute('data-tab');
+                    loadTabContent(tabName);
+                });
+            });
+
+            // Set default tab if none is active
+            const activeTab = document.querySelector('#memberTabs .nav-link.active');
+            if (!activeTab) {
+                // Default to borrowed tab if no tab is active
+                loadTabContent('borrowed');
+                document.getElementById('borrowed-tab').classList.add('active');
+            }
+        });
+
+        // SignalR connection for real-time updates
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/libraryHub")
+            .build();
+
+        connection.start().then(function () {
+            console.log("Conexão SignalR estabelecida");
+        }).catch(function (err) {
+            console.error("Erro na conexão SignalR: " + err.toString());
+        });
+
+        // Listen for real-time reaction updates
+        connection.on("UpdateReactions", function (data) {
+            const likesElement = document.getElementById(`likes-${data.BookId}`);
+            const dislikesElement = document.getElementById(`dislikes-${data.BookId}`);
+
+            if (likesElement) likesElement.textContent = data.LikesCount;
+            if (dislikesElement) dislikesElement.textContent = data.DislikesCount;
+        });
+
+        // Rate book function
+        function rateBook(bookId, isLike) {
+            fetch('@Url.Action("RateBook", "Home")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': token
+                },
+                body: JSON.stringify({
+                    bookId: bookId,
+                    isLike: isLike
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById(`likes-${bookId}`).textContent = data.likesCount;
+                    document.getElementById(`dislikes-${bookId}`).textContent = data.dislikesCount;
+
+                    const likeBtn = document.querySelector(`button[onclick="rateBook('${bookId}', true)"]`);
+                    const dislikeBtn = document.querySelector(`button[onclick="rateBook('${bookId}', false)"]`);
+
+                    if (likeBtn && dislikeBtn) {
+                        likeBtn.classList.remove('btn-success');
+                        dislikeBtn.classList.remove('btn-danger');
+                        likeBtn.classList.add('btn-outline-success');
+                        dislikeBtn.classList.add('btn-outline-danger');
+
+                        if (isLike) {
+                            likeBtn.classList.remove('btn-outline-success');
+                            likeBtn.classList.add('btn-success');
+                        } else {
+                            dislikeBtn.classList.remove('btn-outline-danger');
+                            dislikeBtn.classList.add('btn-danger');
+                        }
+                    }
+
+                    alert('Avaliação registada com sucesso!');
+                } else {
+                    alert(data.message || 'Erro ao avaliar livro');
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                alert('Erro ao avaliar livro');
+            });
+        }
+
+        // Add comment function
+        function addComment(bookId, bookTitle) {
+            document.getElementById('commentBookId').value = bookId;
+            document.querySelector('#commentModal .modal-title').textContent = `Comentar: ${bookTitle}`;
+            document.getElementById('commentText').value = '';
+            document.getElementById('commentRating').value = '';
+
+            const likeBtn = document.querySelector('#commentModal .btn-outline-success');
+            const dislikeBtn = document.querySelector('#commentModal .btn-outline-danger');
+
+            if (likeBtn) {
+                likeBtn.classList.remove('btn-success');
+                likeBtn.classList.add('btn-outline-success');
+            }
+            if (dislikeBtn) {
+                dislikeBtn.classList.remove('btn-danger');
+                dislikeBtn.classList.add('btn-outline-danger');
+            }
+
+            new bootstrap.Modal(document.getElementById('commentModal')).show();
+        }
+
+        // Set rating function
+        function setRating(isLike) {
+            document.getElementById('commentRating').value = isLike;
+
+            const likeBtn = document.querySelector('#commentModal .btn-outline-success');
+            const dislikeBtn = document.querySelector('#commentModal .btn-outline-danger');
+
+            if (likeBtn) {
+                likeBtn.classList.remove('btn-success');
+                likeBtn.classList.add('btn-outline-success');
+            }
+            if (dislikeBtn) {
+                dislikeBtn.classList.remove('btn-danger');
+                dislikeBtn.classList.add('btn-outline-danger');
+            }
+
+            if (isLike && likeBtn) {
+                likeBtn.classList.remove('btn-outline-success');
+                likeBtn.classList.add('btn-success');
+            } else if (!isLike && dislikeBtn) {
+                dislikeBtn.classList.remove('btn-outline-danger');
+                dislikeBtn.classList.add('btn-danger');
+            }
+        }
+
+        // Submit comment function
+        function submitComment() {
+            const bookId = document.getElementById('commentBookId').value;
+            const comment = document.getElementById('commentText').value;
+            const rating = document.getElementById('commentRating').value;
+
+            if (!rating) {
+                alert('Por favor, selecione uma avaliação (Gosto/Não Gosto).');
+                return;
+            }
+
+            if (!comment.trim()) {
+                alert('Por favor, escreva um comentário.');
+                return;
+            }
+
+            fetch('@Url.Action("RateBook", "Home")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': token
+                },
+                body: JSON.stringify({
+                    bookId: bookId,
+                    isLike: rating === 'true',
+                    comment: comment
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message || 'Comentário adicionado com sucesso!');
+                    bootstrap.Modal.getInstance(document.getElementById('commentModal')).hide();
+                    // Reload current tab content
+                    const activeTab = document.querySelector('#memberTabs .nav-link.active');
+                    if (activeTab) {
+                        const tabName = activeTab.getAttribute('data-tab');
+                        loadTabContent(tabName);
+                    }
+                } else {
+                    alert(data.message || 'Erro ao adicionar comentário');
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                alert('Erro ao adicionar comentário');
+            });
+        }
+    </script>
+}

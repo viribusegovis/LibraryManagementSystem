@@ -21,10 +21,6 @@ namespace LibraryManagementSystem.Models
         [Display(Name = "ISBN")]
         public string? ISBN { get; set; }
 
-        [Required(ErrorMessage = "A categoria é obrigatória")]
-        [ForeignKey("Category")]
-        public Guid CategoryId { get; set; }
-
         [Range(1000, 2030, ErrorMessage = "Ano de publicação deve estar entre 1000 e 2030")]
         [Display(Name = "Ano de Publicação")]
         public int? YearPublished { get; set; }
@@ -35,9 +31,10 @@ namespace LibraryManagementSystem.Models
         [Display(Name = "Data de Criação")]
         public DateTime CreatedDate { get; set; } = DateTime.Now;
 
-        // Navigation properties
-        public virtual Category Category { get; set; } = null!;
+        public virtual ICollection<Category> Categories { get; set; } = new List<Category>();
+
+        // Keep existing relationships
         public virtual ICollection<Borrowing> Borrowings { get; set; } = new List<Borrowing>();
-        public virtual ICollection<BookReview> Reviews { get; set; } = new List<BookReview>();
+        public virtual ICollection<BookReview> BookReviews { get; set; } = new List<BookReview>();
     }
 }

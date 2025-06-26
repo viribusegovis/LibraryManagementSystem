@@ -1,0 +1,325 @@
+﻿@model LibraryManagementSystem.Models.Borrowing
+@{
+    ViewData["Title"] = "Criar Empréstimo";
+    Layout = "_AdminLayout";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+}
+
+<div class="container-fluid custom-width-container dashboard-container">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center dashboard-header">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-handshake me-2"></i>Criar Novo Empréstimo
+                    </h1>
+                    <p class="mb-0">Registar empréstimo de livro para membro</p>
+                </div>
+                <div class="text-end">
+                    <a asp-action="Index" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Voltar à Lista
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-plus-circle me-2"></i>Informações do Empréstimo
+                    </h6>
+                </div>
+                <div class="card-body card-content">
+                    <form asp-action="Create" method="post">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                        <!-- Book Selection -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label for="BookId" class="form-label fw-semibold">
+                                        <i class="fas fa-book me-2"></i>Livro *
+                                    </label>
+                                    <select asp-for="BookId" class="form-control" asp-items="ViewBag.Books" id="bookSelect">
+                                        <option value="">Selecione um livro disponível</option>
+                                    </select>
+                                    <span asp-validation-for="BookId" class="text-danger"></span>
+                                    <small class="form-text text-muted">
+                                        Apenas livros disponíveis são mostrados na lista
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Selected Book Info -->
+                        @if (ViewBag.SelectedBook != null)
+                        {
+                            var selectedBook = ViewBag.SelectedBook as LibraryManagementSystem.Models.Book;
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <div class="alert alert-info">
+                                        <h6><i class="fas fa-info-circle me-2"></i>Livro Selecionado:</h6>
+                                        <strong>@selectedBook.Title</strong> por @selectedBook.Author<br>
+                                        @if (selectedBook.Categories != null && selectedBook.Categories.Any())
+                                        {
+                                            <small class="text-muted">
+                                                Categorias: @string.Join(", ", selectedBook.Categories.Select(c => c.Name))
+                                            </small>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        <!-- Member Selection -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label for="MemberId" class="form-label fw-semibold">
+                                        <i class="fas fa-user me-2"></i>Membro *
+                                    </label>
+                                    <select asp-for="MemberId" class="form-control" asp-items="ViewBag.Members" id="memberSelect">
+                                        <option value="">Selecione um membro ativo</option>
+                                    </select>
+                                    <span asp-validation-for="MemberId" class="text-danger"></span>
+                                    <small class="form-text text-muted">
+                                        Apenas membros ativos sem livros em atraso podem fazer empréstimos
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Selected Member Info -->
+                        @if (ViewBag.SelectedMember != null)
+                        {
+                            var selectedMember = ViewBag.SelectedMember as LibraryManagementSystem.Models.Member;
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <div class="alert alert-success">
+                                        <h6><i class="fas fa-user-check me-2"></i>Membro Selecionado:</h6>
+                                        <strong>@selectedMember.Name</strong><br>
+                                        <small class="text-muted">
+                                            Email: @selectedMember.Email | Cartão: @selectedMember.CardNumber
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        <!-- Borrowing Details -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="BorrowDate" class="form-label fw-semibold">
+                                        <i class="fas fa-calendar-plus me-2"></i>Data de Empréstimo
+                                    </label>
+                                    <input type="date" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")" readonly />
+                                    <small class="form-text text-muted">Data atual (não editável)</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="DueDate" class="form-label fw-semibold">
+                                        <i class="fas fa-calendar-times me-2"></i>Data Limite *
+                                    </label>
+                                    <input asp-for="DueDate" type="date" class="form-control"
+                                           min="@DateTime.Now.AddDays(1).ToString("yyyy-MM-dd")"
+                                           max="@DateTime.Now.AddDays(30).ToString("yyyy-MM-dd")" />
+                                    <span asp-validation-for="DueDate" class="text-danger"></span>
+                                    <small class="form-text text-muted">
+                                        Máximo 30 dias a partir de hoje
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Borrowing Rules Info -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card" style="background-color: #f8f9fa; border: 1px solid #dee2e6;">
+                                    <div class="card-body">
+                                        <h6 class="card-title">
+                                            <i class="fas fa-info-circle text-primary me-2"></i>Regras de Empréstimo
+                                        </h6>
+                                        <ul class="mb-0">
+                                            <li>Cada livro tem apenas uma cópia disponível</li>
+                                            <li>Período máximo de empréstimo: 30 dias</li>
+                                            <li>Membros com livros em atraso não podem fazer novos empréstimos</li>
+                                            <li>O livro ficará indisponível até ser devolvido</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a asp-action="Index" class="btn btn-secondary me-md-2">
+                                <i class="fas fa-times me-2"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-success" id="submitBtn">
+                                <i class="fas fa-handshake me-2"></i>Criar Empréstimo
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Available Books Summary -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-book me-2"></i>Livros Disponíveis para Empréstimo
+                    </h6>
+                </div>
+                <div class="card-body card-content">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Título</th>
+                                    <th>Autor</th>
+                                    <th>Categorias</th>
+                                    <th>Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var book in ViewBag.Books as SelectList)
+                                {
+                                    if (!string.IsNullOrEmpty(book.Value))
+                                    {
+                                        <tr>
+                                            <td>@book.Text</td>
+                                            <td>-</td>
+                                            <td>-</td>
+                                            <td>
+                                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                                        onclick="selectBook('@book.Value', '@book.Text')">
+                                                    <i class="fas fa-hand-pointer"></i> Selecionar
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Enhanced form validation and user experience
+        document.addEventListener('DOMContentLoaded', function() {
+            const bookSelect = document.getElementById('bookSelect');
+            const memberSelect = document.getElementById('memberSelect');
+            const submitBtn = document.getElementById('submitBtn');
+            const dueDateInput = document.querySelector('input[name="DueDate"]');
+
+            // Set default due date to 14 days from now
+            if (!dueDateInput.value) {
+                const defaultDueDate = new Date();
+                defaultDueDate.setDate(defaultDueDate.getDate() + 14);
+                dueDateInput.value = defaultDueDate.toISOString().split('T')[0];
+            }
+
+            // Validate form before submission
+            function validateForm() {
+                const bookSelected = bookSelect.value !== '';
+                const memberSelected = memberSelect.value !== '';
+                const dueDateValid = dueDateInput.value !== '';
+
+                submitBtn.disabled = !(bookSelected && memberSelected && dueDateValid);
+
+                if (submitBtn.disabled) {
+                    submitBtn.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Preencha todos os campos';
+                    submitBtn.className = 'btn btn-secondary';
+                } else {
+                    submitBtn.innerHTML = '<i class="fas fa-handshake me-2"></i>Criar Empréstimo';
+                    submitBtn.className = 'btn btn-success';
+                }
+            }
+
+            // Add event listeners
+            bookSelect.addEventListener('change', validateForm);
+            memberSelect.addEventListener('change', validateForm);
+            dueDateInput.addEventListener('change', validateForm);
+
+            // Initial validation
+            validateForm();
+
+            // Form submission with loading state
+            document.querySelector('form').addEventListener('submit', function() {
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>A Criar Empréstimo...';
+                submitBtn.disabled = true;
+            });
+        });
+
+        // Function to select book from the table
+        function selectBook(bookId, bookTitle) {
+            const bookSelect = document.getElementById('bookSelect');
+            bookSelect.value = bookId;
+
+            // Trigger change event to update validation
+            bookSelect.dispatchEvent(new Event('change'));
+
+            // Show success message
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-success alert-dismissible fade show mt-2';
+            alert.innerHTML = `
+                <i class="fas fa-check me-2"></i>Livro "${bookTitle}" selecionado!
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+
+            const container = bookSelect.closest('.form-group');
+            container.appendChild(alert);
+
+            // Auto-dismiss after 3 seconds
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.remove();
+                }
+            }, 3000);
+        }
+
+        // Member selection enhancement
+        document.getElementById('memberSelect').addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            if (selectedOption.value) {
+                console.log('Membro selecionado:', selectedOption.text);
+            }
+        });
+
+        // Due date validation
+        document.querySelector('input[name="DueDate"]').addEventListener('change', function() {
+            const selectedDate = new Date(this.value);
+            const today = new Date();
+            const maxDate = new Date();
+            maxDate.setDate(today.getDate() + 30);
+
+            if (selectedDate <= today) {
+                this.setCustomValidity('A data limite deve ser posterior a hoje.');
+            } else if (selectedDate > maxDate) {
+                this.setCustomValidity('A data limite não pode exceder 30 dias.');
+            } else {
+                this.setCustomValidity('');
+            }
+        });
+    </script>
+}

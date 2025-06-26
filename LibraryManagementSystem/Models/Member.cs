@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿// Models/Member.cs - Add the missing navigation property
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.AspNetCore.Identity;
 
@@ -41,16 +42,14 @@ namespace LibraryManagementSystem.Models
         [Display(Name = "Ativo")]
         public bool IsActive { get; set; } = true;
 
-        // Foreign key to Identity User - OPTIONAL relationship
+        // Foreign key to IdentityUser
         [Display(Name = "Utilizador do Sistema")]
         public string? UserId { get; set; }
 
-        // Navigation property to IdentityUser
+        // Navigation properties
         [ForeignKey("UserId")]
         public virtual IdentityUser? User { get; set; }
-
-        // Navigation properties for library operations
         public virtual ICollection<Borrowing> Borrowings { get; set; } = new List<Borrowing>();
-        public virtual ICollection<BookReview> Reviews { get; set; } = new List<BookReview>();
+        public virtual ICollection<BookReview> BookReviews { get; set; } = new List<BookReview>(); // Added missing navigation property
     }
 }

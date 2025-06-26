@@ -10,12 +10,14 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
+builder.Services.AddRazorPages();
+
 // Add Entity Framework with SQL Server
 builder.Services.AddDbContext<LibraryContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Add Identity services with UI support
-builder.Services.AddDefaultIdentity<IdentityUser>(options => {
+builder.Services.AddIdentity<IdentityUser, IdentityRole>(options => {
     options.SignIn.RequireConfirmedAccount = false;
     options.Password.RequireDigit = true;
     options.Password.RequiredLength = 6;
@@ -23,16 +25,20 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options => {
     options.Password.RequireUppercase = false;
     options.Password.RequireLowercase = false;
 })
-.AddRoles<IdentityRole>()
-.AddEntityFrameworkStores<LibraryContext>();
+.AddEntityFrameworkStores<LibraryContext>()
+.AddDefaultTokenProviders();
 
-// Configure application cookie to redirect to login
+// Configure application cookies
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/Identity/Account/Login";
     options.LogoutPath = "/Identity/Account/Logout";
     options.AccessDeniedPath = "/Identity/Account/AccessDenied";
+    options.Cookie.HttpOnly = true;
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
+    options.SlidingExpiration = true;
 });
+
 
 // Add SignalR
 builder.Services.AddSignalR();
@@ -64,7 +70,7 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 // Add a specific route for root URL to redirect to login
-app.MapGet("/", context =>
+app.MapGet("/", async context =>
 {
     if (!context.User.Identity.IsAuthenticated)
     {
@@ -74,11 +80,17 @@ app.MapGet("/", context =>
     {
         context.Response.Redirect("/Admin");
     }
-    else
+    else if (context.User.IsInRole("Membro"))
     {
         context.Response.Redirect("/Home");
     }
-    return Task.CompletedTask;
+    else
+    {
+        // Fallback for users without proper roles
+        context.Response.Redirect("/Identity/Account/AccessDenied");
+    }
+
+    await Task.CompletedTask;
 });
 
 app.MapRazorPages();

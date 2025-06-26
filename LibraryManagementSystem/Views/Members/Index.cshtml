@@ -1,0 +1,163 @@
+﻿@model IEnumerable<LibraryManagementSystem.Models.Member>
+@{
+    ViewData["Title"] = "Gestão de Membros";
+    Layout = "_AdminLayout";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+}
+
+<div class="container-fluid custom-width-container dashboard-container">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center dashboard-header">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-users me-2"></i>Gestão de Membros
+                    </h1>
+                    <p class="mb-0">Gerir membros da biblioteca</p>
+                </div>
+                <div class="text-end">
+                    <small class="text-muted">
+                        Última atualização: @DateTime.Now.ToString("dd/MM/yyyy HH:mm")
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-search me-2"></i>Pesquisar Membros
+                    </h6>
+                </div>
+                <div class="card-body card-content">
+                    <form method="get">
+                        <div class="row">
+                            <div class="col-md-10">
+                                <input type="text" name="searchString" value="@ViewData["CurrentFilter"]"
+                                       class="form-control"
+                                       placeholder="Nome, email ou número de cartão..." />
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-search me-2"></i>Pesquisar
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Members Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card dashboard-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-list me-2"></i>Lista de Membros (@Model.Count() membros)
+                    </h6>
+                    <a asp-action="Create" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-plus me-1"></i>Novo Membro
+                    </a>
+                </div>
+                <div class="card-body card-content">
+                    @if (Model != null && Model.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Membro</th>
+                                        <th>Contacto</th>
+                                        <th>Data Inscrição</th>
+                                        <th>Estado</th>
+                                        <th>Empréstimos</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var member in Model)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="card-icon bg-success-gradient me-3" style="width: 40px; height: 40px; font-size: 1rem;">
+                                                        @member.Name.Substring(0, 1).ToUpper()
+                                                    </div>
+                                                    <div>
+                                                        <strong>@member.Name</strong><br>
+                                                        <small class="text-muted">Cartão: @member.CardNumber</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div>
+                                                    <i class="fas fa-envelope text-primary me-1"></i>@member.Email<br>
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-phone text-success me-1"></i>@(member.Phone ?? "Não informado")
+                                                    </small>
+                                                </div>
+                                            </td>
+                                            <td>@member.MembershipDate.ToString("dd/MM/yyyy")</td>
+                                            <td>
+                                                <span class="badge @(member.IsActive ? "bg-success" : "bg-danger")">
+                                                    @(member.IsActive ? "Ativo" : "Inativo")
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-warning">
+                                                    @member.Borrowings.Count(b => b.Status == "Emprestado") ativos
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <a asp-action="Details" asp-route-id="@member.MemberId"
+                                                       class="btn btn-sm btn-outline-info" title="Detalhes">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-users fa-3x mb-3"></i>
+                            <h5>Nenhum membro encontrado</h5>
+                            <p>Não foram encontrados membros com os critérios especificados.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Add loading animation to quick action buttons (same as admin dashboard)
+        document.querySelectorAll('.quick-action-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const icon = this.querySelector('i');
+                const text = this.querySelector('strong');
+                if (icon && text) {
+                    icon.className = 'fas fa-spinner fa-spin';
+                    text.textContent = 'A Carregar...';
+                }
+            });
+        });
+    </script>
+}
