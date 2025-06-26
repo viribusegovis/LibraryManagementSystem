@@ -1,0 +1,233 @@
+﻿@page
+@model RegisterModel
+@{
+    ViewData["Title"] = "Registar Nova Conta";
+    Layout = "_AdminLayout";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+}
+
+<div class="container-fluid custom-width-container dashboard-container">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center dashboard-header">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-user-plus me-2"></i>@ViewData["Title"]
+                    </h1>
+                    <p class="mb-0">Criar nova conta de membro da biblioteca</p>
+                </div>
+                <div class="text-end">
+                    <a asp-page="./Login" asp-route-returnUrl="@Model.ReturnUrl" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Voltar ao Login
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Registration Form -->
+    <div class="row justify-content-center">
+        <div class="">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-user-circle me-2"></i>Informações da Nova Conta
+                    </h6>
+                </div>
+                <div class="card-body card-content">
+                    <form id="registerForm" asp-route-returnUrl="@Model.ReturnUrl" method="post">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <!-- Personal Information Section -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-user me-2"></i>Informações Pessoais
+                                </h6>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Full Name -->
+                            <div class="col-md-6 mb-3">
+                                <div class="form-floating">
+                                    <input asp-for="Input.FullName" class="form-control" aria-required="true" placeholder="Nome completo" />
+                                    <label asp-for="Input.FullName">
+                                        <i class="fas fa-user me-1"></i>Nome Completo
+                                    </label>
+                                    <span asp-validation-for="Input.FullName" class="text-danger"></span>
+                                </div>
+                            </div>
+
+                            <!-- Email -->
+                            <div class="col-md-6 mb-3">
+                                <div class="form-floating">
+                                    <input asp-for="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="nome@exemplo.com" />
+                                    <label asp-for="Input.Email">
+                                        <i class="fas fa-envelope me-1"></i>Email
+                                    </label>
+                                    <span asp-validation-for="Input.Email" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Phone -->
+                            <div class="col-md-6 mb-3">
+                                <div class="form-floating">
+                                    <input asp-for="Input.Phone" class="form-control" placeholder="Telefone (opcional)" />
+                                    <label asp-for="Input.Phone">
+                                        <i class="fas fa-phone me-1"></i>Telefone (opcional)
+                                    </label>
+                                    <span asp-validation-for="Input.Phone" class="text-danger"></span>
+                                </div>
+                            </div>
+
+                            <!-- Date of Birth -->
+                            <div class="col-md-6 mb-3">
+                                <div class="form-floating">
+                                    <input asp-for="Input.DateOfBirth" class="form-control" type="date" />
+                                    <label asp-for="Input.DateOfBirth">
+                                        <i class="fas fa-birthday-cake me-1"></i>Data de Nascimento (opcional)
+                                    </label>
+                                    <span asp-validation-for="Input.DateOfBirth" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Address -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="form-floating">
+                                    <input asp-for="Input.Address" class="form-control" placeholder="Morada (opcional)" />
+                                    <label asp-for="Input.Address">
+                                        <i class="fas fa-map-marker-alt me-1"></i>Morada (opcional)
+                                    </label>
+                                    <span asp-validation-for="Input.Address" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Security Section -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-lock me-2"></i>Segurança da Conta
+                                </h6>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Password -->
+                            <div class="col-md-6 mb-3">
+                                <div class="form-floating">
+                                    <input asp-for="Input.Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="palavra-passe" />
+                                    <label asp-for="Input.Password">
+                                        <i class="fas fa-key me-1"></i>Palavra-passe
+                                    </label>
+                                    <span asp-validation-for="Input.Password" class="text-danger"></span>
+                                </div>
+                            </div>
+
+                            <!-- Confirm Password -->
+                            <div class="col-md-6 mb-3">
+                                <div class="form-floating">
+                                    <input asp-for="Input.ConfirmPassword" class="form-control" autocomplete="new-password" aria-required="true" placeholder="confirmar palavra-passe" />
+                                    <label asp-for="Input.ConfirmPassword">
+                                        <i class="fas fa-check me-1"></i>Confirmar Palavra-passe
+                                    </label>
+                                    <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Information Alert -->
+                        <div class="alert alert-info mb-4">
+                            <h6 class="alert-heading">
+                                <i class="fas fa-info-circle me-2"></i>Informações Importantes:
+                            </h6>
+                            <ul class="mb-0">
+                                <li>Será automaticamente atribuído um cartão de biblioteca único</li>
+                                <li>A sua conta será ativada imediatamente após o registo</li>
+                                <li>Poderá aceder ao catálogo de livros e fazer empréstimos</li>
+                                <li>Todos os campos marcados são obrigatórios</li>
+                            </ul>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="d-grid">
+                            <button id="registerSubmit" type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-user-plus me-2"></i>Criar Conta
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Additional Information -->
+    <div class="row justify-content-center mt-4">
+        <div class="">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-book me-2"></i>Benefícios de Ser Membro
+                    </h6>
+                </div>
+                <div class="card-body card-content">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="text-center">
+                                <div class="card-icon bg-primary-gradient mx-auto mb-2">
+                                    <i class="fas fa-book-open"></i>
+                                </div>
+                                <h6>Acesso ao Catálogo</h6>
+                                <small class="text-muted">Navegue por toda a nossa coleção de livros</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="text-center">
+                                <div class="card-icon bg-success-gradient mx-auto mb-2">
+                                    <i class="fas fa-handshake"></i>
+                                </div>
+                                <h6>Empréstimos</h6>
+                                <small class="text-muted">Requisite livros e gerencie os seus empréstimos</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="text-center">
+                                <div class="card-icon bg-info-gradient mx-auto mb-2">
+                                    <i class="fas fa-star"></i>
+                                </div>
+                                <h6>Avaliações</h6>
+                                <small class="text-muted">Avalie e comente os livros que leu</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Link -->
+    <div class="row justify-content-center mt-4">
+        <div class="col-lg-8 col-md-10 text-center">
+            <p class="text-muted">
+                Já tem conta? 
+                <a asp-page="./Login" asp-route-returnUrl="@Model.ReturnUrl" class="text-decoration-none">
+                    <i class="fas fa-sign-in-alt me-1"></i>Iniciar sessão aqui
+                </a>
+            </p>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/register-validation.js" asp-append-version="true"></script>
+}

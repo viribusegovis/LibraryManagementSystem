@@ -1,0 +1,157 @@
+﻿@page
+@model RegisterConfirmationModel
+@{
+    ViewData["Title"] = "Confirmação de Registo";
+    Layout = "_AdminLayout";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+}
+
+<div class="container-fluid custom-width-container dashboard-container">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="dashboard-header text-center">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-check-circle me-2"></i>@ViewData["Title"]
+                </h1>
+                <p class="mb-0">Registo efetuado com sucesso</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Message -->
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-md-10">
+            <div class="card dashboard-card">
+                <div class="card-header bg-success text-white">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-user-check me-2"></i>Conta Criada com Sucesso!
+                    </h6>
+                </div>
+                <div class="card-body card-content text-center">
+                    <div class="mb-4">
+                        <div class="card-icon bg-success-gradient mx-auto mb-3" style="width: 80px; height: 80px; font-size: 2.5rem;">
+                            <i class="fas fa-envelope-open"></i>
+                        </div>
+                        <h5 class="text-success">Bem-vindo à nossa biblioteca!</h5>
+                    </div>
+
+                    @if (Model.DisplayConfirmAccountLink)
+                    {
+                        <div class="alert alert-warning">
+                            <h6 class="alert-heading">
+                                <i class="fas fa-exclamation-triangle me-2"></i>Modo de Desenvolvimento
+                            </h6>
+                            <p class="mb-2">
+                                Esta aplicação não tem atualmente um remetente de email real registado, consulte
+                                <a href="https://aka.ms/aspaccountconf" target="_blank" class="text-decoration-none">esta documentação</a>
+                                para saber como configurar um remetente de email real.
+                            </p>
+                            <p class="mb-3">
+                                Normalmente isto seria enviado por email. Para fins de teste, pode usar o link abaixo:
+                            </p>
+                            <a id="confirm-link" href="@Model.EmailConfirmationUrl" class="btn btn-success btn-lg">
+                                <i class="fas fa-check-circle me-2"></i>Clique aqui para confirmar a sua conta
+                            </a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <h6 class="alert-heading">
+                                <i class="fas fa-envelope me-2"></i>Verifique o seu Email
+                            </h6>
+                            <p class="mb-0">
+                                Por favor, verifique o seu email para confirmar a sua conta.
+                                Enviámos um link de confirmação para <strong>@Model.Email</strong>.
+                            </p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Next Steps -->
+    <div class="row justify-content-center mt-4">
+        <div class="col-lg-8 col-md-10">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-list-check me-2"></i>Próximos Passos
+                    </h6>
+                </div>
+                <div class="card-body card-content">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="text-center">
+                                <div class="card-icon bg-primary-gradient mx-auto mb-2">
+                                    <i class="fas fa-envelope-open-text"></i>
+                                </div>
+                                <h6>1. Confirmar Email</h6>
+                                <small class="text-muted">Clique no link de confirmação enviado para o seu email</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="text-center">
+                                <div class="card-icon bg-success-gradient mx-auto mb-2">
+                                    <i class="fas fa-sign-in-alt"></i>
+                                </div>
+                                <h6>2. Fazer Login</h6>
+                                <small class="text-muted">Aceda à sua conta com as credenciais criadas</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="text-center">
+                                <div class="card-icon bg-info-gradient mx-auto mb-2">
+                                    <i class="fas fa-book-open"></i>
+                                </div>
+                                <h6>3. Explorar Catálogo</h6>
+                                <small class="text-muted">Descubra os livros disponíveis na biblioteca</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Account Information -->
+    <div class="row justify-content-center mt-4">
+        <div class="col-lg-8 col-md-10">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-info-circle me-2"></i>Informações da Sua Conta
+                    </h6>
+                </div>
+                <div class="card-body card-content">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <strong>Tipo de Conta:</strong><br>
+                            <span class="badge bg-success">Membro da Biblioteca</span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <strong>Estado:</strong><br>
+                            <span class="badge bg-warning">Aguarda Confirmação</span>
+                        </div>
+                        <div class="col-12">
+                            <strong>Benefícios Incluídos:</strong><br>
+                            <ul class="mt-2 mb-0">
+                                <li>Acesso completo ao catálogo de livros</li>
+                                <li>Possibilidade de fazer empréstimos</li>
+                                <li>Histórico pessoal de empréstimos</li>
+                                <li>Sistema de avaliações e comentários</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/js/register-validation.js" asp-append-version="true"></script>

@@ -1,4 +1,3 @@
-// Program.cs - Updated routing configuration
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using LibraryManagementSystem.Data;
@@ -9,24 +8,29 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
-
 builder.Services.AddRazorPages();
 
 // Add Entity Framework with SQL Server
 builder.Services.AddDbContext<LibraryContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Add Identity services with UI support
-builder.Services.AddIdentity<IdentityUser, IdentityRole>(options => {
-    options.SignIn.RequireConfirmedAccount = false;
+// Default Identity with confirmation link on confirmation page
+builder.Services.AddDefaultIdentity<IdentityUser>(options => {
+    // Email confirmation settings (shows link on confirmation page)
+    options.SignIn.RequireConfirmedAccount = true;
+
+    // Password requirements
     options.Password.RequireDigit = true;
     options.Password.RequiredLength = 6;
     options.Password.RequireNonAlphanumeric = false;
     options.Password.RequireUppercase = false;
     options.Password.RequireLowercase = false;
+
+    // User settings
+    options.User.RequireUniqueEmail = true;
 })
-.AddEntityFrameworkStores<LibraryContext>()
-.AddDefaultTokenProviders();
+.AddRoles<IdentityRole>()
+.AddEntityFrameworkStores<LibraryContext>();
 
 // Configure application cookies
 builder.Services.ConfigureApplicationCookie(options =>
@@ -39,8 +43,7 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.SlidingExpiration = true;
 });
 
-
-// Add SignalR
+// Add SignalR (required by evaluation document)
 builder.Services.AddSignalR();
 
 var app = builder.Build();
@@ -64,19 +67,18 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-//  Default route configuration
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-// Add a specific route for root URL to redirect to login
+// Root URL routing
 app.MapGet("/", async context =>
 {
     if (!context.User.Identity.IsAuthenticated)
     {
         context.Response.Redirect("/Identity/Account/Login");
     }
-    else if (context.User.IsInRole("Bibliotecário"))
+    else if (context.User.IsInRole("BibliotecÃ¡rio"))
     {
         context.Response.Redirect("/Admin");
     }
@@ -86,7 +88,6 @@ app.MapGet("/", async context =>
     }
     else
     {
-        // Fallback for users without proper roles
         context.Response.Redirect("/Identity/Account/AccessDenied");
     }
 

@@ -64,6 +64,30 @@
                 box-shadow: 0 10px 20px rgba(33, 150, 243, 0.3);
             }
 
+        /* ADDED: Register button styling */
+        .btn-register {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            border: none;
+            border-radius: 50px;
+            padding: 12px 30px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            color: white;
+            text-decoration: none;
+            display: inline-block;
+            width: 100%;
+            text-align: center;
+        }
+
+            .btn-register:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 20px rgba(40, 167, 69, 0.3);
+                color: white;
+                text-decoration: none;
+            }
+
         .credentials-info {
             background: #f8f9fa;
             border-radius: 10px;
@@ -72,7 +96,7 @@
             font-size: 0.85rem;
         }
 
-        /* ADDED: About link styling */
+        /* About link styling */
         .about-link {
             position: absolute;
             top: 20px;
@@ -96,7 +120,7 @@
                 text-decoration: none;
             }
 
-        /* ADDED: Footer links styling */
+        /* Footer links styling */
         .auth-footer {
             text-align: center;
             margin-top: 30px;
@@ -116,11 +140,44 @@
                     color: #2196F3;
                     text-decoration: none;
                 }
+
+        /* ADDED: Register section styling */
+        .register-section {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 2px solid #e9ecef;
+            text-align: center;
+        }
+
+            .register-section h6 {
+                color: #495057;
+                margin-bottom: 15px;
+                font-weight: 600;
+            }
+
+        /* ADDED: Additional links styling */
+        .additional-links {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+            .additional-links a {
+                color: #6c757d;
+                text-decoration: none;
+                font-size: 0.9rem;
+                margin: 0 15px;
+                transition: color 0.3s ease;
+            }
+
+                .additional-links a:hover {
+                    color: #2196F3;
+                    text-decoration: underline;
+                }
     </style>
 }
 
 <div class="auth-wrapper">
-    <!-- ADDED: About link in top-right corner -->
+    <!-- About link in top-right corner -->
     <a href="@Url.Action("About", "Home")" class="about-link">
         <i class="fas fa-info-circle me-1"></i>Sobre o Sistema
     </a>
@@ -137,18 +194,6 @@
                     Bem-vindo ao sistema de gestão da nossa biblioteca.
                     Faça login para aceder aos recursos disponíveis.
                 </p>
-
-                <!-- ADDED: Additional info with About link -->
-                <div class="mt-4">
-                    <p class="mb-2">
-                        <i class="fas fa-graduation-cap me-2"></i>
-                        Projeto Académico - Desenvolvimento Web
-                    </p>
-                    <a href="@Url.Action("About", "Home")" class="text-white text-decoration-none">
-                        <i class="fas fa-arrow-right me-1"></i>
-                        Ver informações do projeto
-                    </a>
-                </div>
             </div>
 
             <!-- Right Panel - Login Form -->
@@ -199,6 +244,26 @@
                     </div>
                 </form>
 
+                <!-- ADDED: Register Section -->
+                <div class="register-section">
+                    <h6>
+                        <i class="fas fa-user-plus me-2"></i>Não tem conta?
+                    </h6>
+                    <a asp-page="./Register" asp-route-returnUrl="@Model.ReturnUrl" class="btn-register">
+                        <i class="fas fa-user-plus me-2"></i>Criar Nova Conta
+                    </a>
+                    <p class="text-muted mt-2 mb-0">
+                        <small>Junte-se à nossa biblioteca e aceda a todos os recursos</small>
+                    </p>
+                </div>
+
+                <!-- ADDED: Additional Links -->
+                <div class="additional-links">
+                    <a asp-page="./ForgotPassword">
+                        <i class="fas fa-key me-1"></i>Esqueceu a palavra-passe?
+                    </a>
+                </div>
+
                 <!-- Test Credentials Info -->
                 <div class="credentials-info">
                     <h6 class="fw-bold mb-2">
@@ -245,7 +310,7 @@
                 });
             });
 
-            // ADDED: About link hover effect
+            // About link hover effect
             const aboutLinks = document.querySelectorAll('a[href*="About"]');
             aboutLinks.forEach(link => {
                 link.addEventListener('mouseenter', function() {
@@ -255,6 +320,29 @@
                     this.style.transform = 'translateY(0)';
                 });
             });
+
+            // ADDED: Register button hover effect
+            const registerBtn = document.querySelector('.btn-register');
+            if (registerBtn) {
+                registerBtn.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-2px) scale(1.02)';
+                });
+                registerBtn.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0) scale(1)';
+                });
+            }
+
+            // ADDED: Form validation enhancement
+            const loginForm = document.getElementById('account');
+            if (loginForm) {
+                loginForm.addEventListener('submit', function() {
+                    const submitBtn = document.getElementById('login-submit');
+                    if (submitBtn) {
+                        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>A Entrar...';
+                        submitBtn.disabled = true;
+                    }
+                });
+            }
         });
     </script>
 }
