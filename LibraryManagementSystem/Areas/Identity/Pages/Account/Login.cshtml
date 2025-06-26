@@ -59,10 +59,10 @@
             transition: all 0.3s ease;
         }
 
-        .btn-login:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(33, 150, 243, 0.3);
-        }
+            .btn-login:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 20px rgba(33, 150, 243, 0.3);
+            }
 
         .credentials-info {
             background: #f8f9fa;
@@ -71,10 +71,60 @@
             margin-top: 20px;
             font-size: 0.85rem;
         }
+
+        /* ADDED: About link styling */
+        .about-link {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #2196F3;
+            padding: 8px 16px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+            .about-link:hover {
+                background: white;
+                color: #1976D2;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+                text-decoration: none;
+            }
+
+        /* ADDED: Footer links styling */
+        .auth-footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+        }
+
+            .auth-footer a {
+                color: #6c757d;
+                text-decoration: none;
+                margin: 0 10px;
+                font-size: 0.9rem;
+                transition: color 0.3s ease;
+            }
+
+                .auth-footer a:hover {
+                    color: #2196F3;
+                    text-decoration: none;
+                }
     </style>
 }
 
 <div class="auth-wrapper">
+    <!-- ADDED: About link in top-right corner -->
+    <a href="@Url.Action("About", "Home")" class="about-link">
+        <i class="fas fa-info-circle me-1"></i>Sobre o Sistema
+    </a>
+
     <div class="auth-card">
         <div class="row g-0">
             <!-- Left Panel -->
@@ -87,6 +137,18 @@
                     Bem-vindo ao sistema de gestão da nossa biblioteca.
                     Faça login para aceder aos recursos disponíveis.
                 </p>
+
+                <!-- ADDED: Additional info with About link -->
+                <div class="mt-4">
+                    <p class="mb-2">
+                        <i class="fas fa-graduation-cap me-2"></i>
+                        Projeto Académico - Desenvolvimento Web
+                    </p>
+                    <a href="@Url.Action("About", "Home")" class="text-white text-decoration-none">
+                        <i class="fas fa-arrow-right me-1"></i>
+                        Ver informações do projeto
+                    </a>
+                </div>
             </div>
 
             <!-- Right Panel - Login Form -->
@@ -155,6 +217,13 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Footer with additional links -->
+                <div class="auth-footer">
+                    <a href="@Url.Action("About", "Home")">
+                        <i class="fas fa-info-circle me-1"></i>Sobre o Sistema
+                    </a>
+                </div>
             </div>
         </div>
     </div>
@@ -173,6 +242,17 @@
                 });
                 input.addEventListener('blur', function() {
                     this.parentElement.style.transform = 'scale(1)';
+                });
+            });
+
+            // ADDED: About link hover effect
+            const aboutLinks = document.querySelectorAll('a[href*="About"]');
+            aboutLinks.forEach(link => {
+                link.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-2px)';
+                });
+                link.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
                 });
             });
         });

@@ -11,8 +11,6 @@
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
-    <!-- Member Navigation -->
-    <!-- Member Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow">
         <div class="container-fluid">
             <a class="navbar-brand fw-bold" asp-controller="Home" asp-action="Index">
@@ -42,9 +40,10 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" asp-controller="Home" asp-action="About">
-                            <i class="fas fa-info-circle me-1"></i>Sobre
+                            <i class="fas fa-info-circle me-2"></i>Sobre
                         </a>
                     </li>
+
                 </ul>
 
                 <ul class="navbar-nav">
@@ -55,17 +54,6 @@
                                 <i class="fas fa-user-circle me-1"></i>@User.Identity.Name
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
-                                <li>
-                                    <a class="dropdown-item" asp-area="Identity" asp-page="/Account/Manage/Index">
-                                        <i class="fas fa-user-edit me-2"></i>Meu Perfil
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" asp-controller="Home" asp-action="MyHistory">
-                                        <i class="fas fa-history me-2"></i>Histórico
-                                    </a>
-                                </li>
-                                <li><hr class="dropdown-divider"></li>
                                 <li>
                                     <form asp-area="Identity" asp-page="/Account/Logout" method="post" class="d-inline">
                                         <button type="submit" class="dropdown-item">
