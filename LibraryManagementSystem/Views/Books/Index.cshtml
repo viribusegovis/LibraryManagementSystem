@@ -1,4 +1,4 @@
-﻿@* Views/Books/Index.cshtml - Complete file with three-state status logic *@
+﻿@* Views/Books/Index.cshtml - Complete file with form-based toggle function *@
 @model IEnumerable<LibraryManagementSystem.Models.Book>
 @{
     ViewData["Title"] = "Gestão de Livros";
@@ -6,9 +6,6 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
-    <style>
-
-    </style>
 }
 
 <div class="container-fluid custom-width-container dashboard-container">
@@ -156,7 +153,10 @@
                                         <option value="">Todas as categorias</option>
                                         @foreach (var category in ViewBag.Categories as SelectList)
                                         {
-                                            <option value="@category.Value" selected="@category.Selected">@category.Text</option>
+                                            <option value="@category.Value"
+                                                    selected="@(category.Value == ViewBag.SelectedCategory?.ToString())">
+                                                @category.Text
+                                            </option>
                                         }
                                     </select>
                                 </div>
@@ -165,10 +165,18 @@
                                 <div class="form-group">
                                     <label for="availability">Estado:</label>
                                     <select name="availability" class="form-control">
-                                        <option value="">Todos os estados</option>
-                                        <option value="available">Disponíveis</option>
-                                        <option value="borrowed">Emprestados</option>
-                                        <option value="unavailable">Indisponíveis</option>
+                                        <option value="" selected="@(ViewBag.SelectedAvailability == null)">
+                                            Todos os estados
+                                        </option>
+                                        <option value="available" selected="@(ViewBag.SelectedAvailability == "available")">
+                                            Disponíveis
+                                        </option>
+                                        <option value="borrowed" selected="@(ViewBag.SelectedAvailability == "borrowed")">
+                                            Emprestados
+                                        </option>
+                                        <option value="unavailable" selected="@(ViewBag.SelectedAvailability == "unavailable")">
+                                            Indisponíveis
+                                        </option>
                                     </select>
                                 </div>
                             </div>
@@ -196,17 +204,25 @@
                         <i class="fas fa-list me-2"></i>Lista de Livros (@Model.Count() livros)
                     </h6>
                     <div>
-                        <a asp-action="Index" asp-route-sortOrder="@ViewData["TitleSortParm"]" class="btn btn-sm btn-outline-secondary">
+                        <a asp-action="Index"
+                           asp-route-sortOrder="@ViewData["TitleSortParm"]"
+                           asp-route-searchString="@ViewData["CurrentFilter"]"
+                           asp-route-categoryId="@ViewBag.SelectedCategory"
+                           asp-route-availability="@ViewBag.SelectedAvailability"
+                           class="btn btn-sm btn-outline-secondary">
                             Título @(ViewData["TitleSortParm"] == "title_desc" ? "↓" : "↑")
                         </a>
-                        <a asp-action="Index" asp-route-sortOrder="@ViewData["AuthorSortParm"]" class="btn btn-sm btn-outline-secondary">
+                        <a asp-action="Index"
+                           asp-route-sortOrder="@ViewData["AuthorSortParm"]"
+                           asp-route-searchString="@ViewData["CurrentFilter"]"
+                           asp-route-categoryId="@ViewBag.SelectedCategory"
+                           asp-route-availability="@ViewBag.SelectedAvailability"
+                           class="btn btn-sm btn-outline-secondary">
                             Autor @(ViewData["AuthorSortParm"] == "author_desc" ? "↓" : "↑")
                         </a>
                     </div>
                 </div>
                 <div class="card-body card-content">
-                    @Html.AntiForgeryToken()
-
                     @if (TempData["SuccessMessage"] != null)
                     {
                         <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -232,7 +248,7 @@
                                         <th>ISBN</th>
                                         <th>Categorias</th>
                                         <th>Ano</th>
-                                        <th class="status-column">Estado</th>
+                                        <th>Estado</th>
                                         <th>Empréstimo Atual</th>
                                         <th>Ações</th>
                                     </tr>
@@ -316,11 +332,14 @@
 
                                                     @if (activeBorrowing == null)
                                                     {
-                                                        <button class="btn btn-sm btn-outline-secondary toggle-btn"
-                                                                onclick="toggleAvailability('@book.BookId', @book.Available.ToString().ToLower())"
-                                                                title="@(book.Available ? "Marcar como indisponível" : "Marcar como disponível")">
-                                                            <i class="fas fa-toggle-@(book.Available ? "on" : "off")"></i>
-                                                        </button>
+                                                        <form asp-controller="Books" asp-action="ToggleAvailability" method="post" class="d-inline">
+                                                            <input type="hidden" name="id" value="@book.BookId" />
+                                                            <button type="submit" class="btn btn-sm btn-outline-secondary toggle-btn"
+                                                                    onclick="return confirm('@(book.Available ? "Marcar este livro como indisponível?" : "Marcar este livro como disponível?")')"
+                                                                    title="@(book.Available ? "Marcar como indisponível" : "Marcar como disponível")">
+                                                                <i class="fas fa-toggle-@(book.Available ? "on" : "off")"></i>
+                                                            </button>
+                                                        </form>
                                                     }
                                                     else
                                                     {
@@ -386,7 +405,7 @@
                                                             </button>
                                                         </form>
                                                     }
-                                                    @if (activeBorrowing == null && book.Available && !book.Borrowings.Any())
+                                                    @if (activeBorrowing == null && !book.Borrowings.Any())
                                                     {
                                                         <a asp-action="Delete" asp-route-id="@book.BookId"
                                                            class="btn btn-sm btn-outline-danger" title="Eliminar"
@@ -428,177 +447,47 @@
 
 @section Scripts {
     <script>
-        function toggleAvailability(bookId, currentStatus) {
+        // Form-based toggle with onclick confirmation
+        function confirmToggle(bookTitle, currentStatus) {
             const action = currentStatus ? 'indisponível' : 'disponível';
-            if (confirm(`Tem certeza que deseja marcar este livro como ${action}?\n\nNota: Esta ação alterna entre disponível e indisponível.`)) {
+            const message = `Tem certeza que deseja marcar "${bookTitle}" como ${action}?`;
 
-                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            console.log('confirmToggle called with:', bookTitle, currentStatus);
 
-                fetch('@Url.Action("ToggleAvailability", "Books")', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'RequestVerificationToken': token
-                    },
-                    body: JSON.stringify({ id: bookId })
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
+            if (confirm(message)) {
+                console.log('User confirmed, submitting form');
+                const button = event.target.closest('button');
+                if (button) {
+                    const icon = button.querySelector('i');
+                    if (icon) {
+                        icon.className = 'fas fa-spinner fa-spin';
                     }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.success) {
-                        updateBookRowVisuals(bookId, data.newStatus);
-                        showAlert('success', data.message);
-                        updateStatisticsCards();
-                    } else {
-                        showAlert('danger', data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Erro:', error);
-                    showAlert('danger', 'Erro ao alterar disponibilidade do livro. Tente novamente.');
-                });
-            }
-        }
-
-        function updateBookRowVisuals(bookId, newStatus) {
-            const row = document.querySelector(`tr[data-book-id="${bookId}"]`);
-            if (!row) return;
-
-            const statusCell = row.querySelector('.status-column');
-            if (statusCell) {
-                const hasActiveBorrowing = row.querySelector('.btn-outline-warning') !== null;
-
-                let badgeHtml = '';
-                if (hasActiveBorrowing) {
-                    badgeHtml = '<span class="badge bg-warning status-badge-fixed"><i class="fas fa-clock me-1"></i>Emprestado</span>';
-                } else if (newStatus) {
-                    badgeHtml = '<span class="badge bg-success status-badge-fixed"><i class="fas fa-check me-1"></i>Disponível</span>';
-                } else {
-                    badgeHtml = '<span class="badge bg-secondary status-badge-fixed"><i class="fas fa-ban me-1"></i>Indisponível</span>';
+                    button.disabled = true;
                 }
-
-                const toggleButton = statusCell.querySelector('button');
-                statusCell.innerHTML = badgeHtml;
-
-                if (toggleButton && !hasActiveBorrowing) {
-                    statusCell.appendChild(document.createTextNode(' '));
-
-                    const newToggleButton = document.createElement('button');
-                    newToggleButton.className = 'btn btn-sm btn-outline-secondary ms-1 toggle-btn';
-                    newToggleButton.onclick = () => toggleAvailability(bookId, newStatus);
-                    newToggleButton.title = newStatus ? 'Marcar como indisponível' : 'Marcar como disponível';
-                    newToggleButton.innerHTML = `<i class="fas fa-toggle-${newStatus ? 'on' : 'off'}"></i>`;
-
-                    statusCell.appendChild(newToggleButton);
-                }
+                return true;
             }
 
-            const actionsCell = row.querySelector('td:last-child .btn-group');
-            if (actionsCell) {
-                updateActionButtons(actionsCell, bookId, newStatus);
-            }
+            console.log('User cancelled');
+            return false;
         }
 
-        function updateActionButtons(actionsContainer, bookId, isAvailable) {
-            const borrowButton = actionsContainer.querySelector('.btn-outline-success');
-            const returnButton = actionsContainer.querySelector('.btn-outline-warning');
 
-            if (isAvailable) {
-                if (returnButton) {
-                    returnButton.remove();
-                }
-
-                if (!borrowButton) {
-                    const newBorrowButton = document.createElement('a');
-                    newBorrowButton.href = `@Url.Action("Create", "Borrowings")?bookId=${bookId}`;
-                    newBorrowButton.className = 'btn btn-sm btn-outline-success';
-                    newBorrowButton.title = 'Emprestar';
-                    newBorrowButton.innerHTML = '<i class="fas fa-handshake"></i>';
-
-                    const editButton = actionsContainer.querySelector('.btn-outline-primary');
-                    if (editButton) {
-                        editButton.insertAdjacentElement('afterend', newBorrowButton);
-                    }
-                }
-            } else {
-                if (borrowButton) {
-                    borrowButton.remove();
-                }
-            }
-        }
-
-        function updateStatisticsCards() {
-            const allRows = document.querySelectorAll('tbody tr[data-book-id]');
-            const totalBooks = allRows.length;
-
-            let availableCount = 0;
-            let borrowedCount = 0;
-            let unavailableCount = 0;
-
-            allRows.forEach(row => {
-                const statusBadge = row.querySelector('.status-column .badge');
-                if (statusBadge) {
-                    const statusText = statusBadge.textContent.trim();
-                    if (statusText.includes('Disponível')) {
-                        availableCount++;
-                    } else if (statusText.includes('Emprestado')) {
-                        borrowedCount++;
-                    } else if (statusText.includes('Indisponível')) {
-                        unavailableCount++;
-                    }
-                }
-            });
-
-            const totalCard = document.querySelector('.text-primary + .h5');
-            const availableCard = document.querySelector('.text-success + .h5');
-            const borrowedCard = document.querySelector('.text-warning + .h5');
-            const unavailableCard = document.querySelector('.text-secondary + .h5');
-
-            if (totalCard) totalCard.textContent = totalBooks;
-            if (availableCard) availableCard.textContent = availableCount;
-            if (borrowedCard) borrowedCard.textContent = borrowedCount;
-            if (unavailableCard) unavailableCard.textContent = unavailableCount;
-        }
-
-        function showAlert(type, message) {
-            const existingAlerts = document.querySelectorAll('.alert');
-            existingAlerts.forEach(alert => {
-                if (alert.textContent.includes('alterar disponibilidade') ||
-                    alert.textContent.includes('marcado como')) {
-                    alert.remove();
-                }
-            });
-
-            const alertDiv = document.createElement('div');
-            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
-            alertDiv.innerHTML = `
-                <i class="fas fa-${type === 'success' ? 'check' : 'exclamation-triangle'} me-2"></i>${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-
-            const cardBody = document.querySelector('.card-body');
-            const tableResponsive = document.querySelector('.table-responsive');
-            if (cardBody && tableResponsive) {
-                cardBody.insertBefore(alertDiv, tableResponsive);
-            }
-
-            setTimeout(() => {
-                if (alertDiv.parentNode) {
-                    alertDiv.remove();
-                }
-            }, 3000);
-        }
-
-        document.querySelectorAll('.btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                if (this.type === 'submit' && !this.disabled) {
+        // Add loading states to other action buttons
+        document.querySelectorAll('.btn[type="submit"]').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                if (!this.disabled && !this.onclick) {
                     const icon = this.querySelector('i');
                     if (icon && !icon.classList.contains('fa-spinner')) {
+                        const originalClass = icon.className;
                         icon.className = 'fas fa-spinner fa-spin';
+
+                        // Restore original icon if form submission fails
+                        setTimeout(() => {
+                            if (icon.className.includes('fa-spinner')) {
+                                icon.className = originalClass;
+                                this.disabled = false;
+                            }
+                        }, 5000);
                     }
                 }
             });

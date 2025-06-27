@@ -1,4 +1,4 @@
-﻿// Controllers/BooksController.cs - Three-state status logic, many-to-many categories, and toggle
+﻿// Controllers/BooksController.cs - Complete with Delete and ToggleAvailability actions
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using LibraryManagementSystem.Data;
@@ -253,11 +253,6 @@ namespace LibraryManagementSystem.Controllers
             return View(book);
         }
 
-        private bool BookExists(Guid id)
-        {
-            return _context.Books.Any(e => e.BookId == id);
-        }
-
         // GET: Books/Delete/5
         public async Task<IActionResult> Delete(Guid? id)
         {
@@ -267,14 +262,13 @@ namespace LibraryManagementSystem.Controllers
             var book = await _context.Books
                 .Include(b => b.Categories)
                 .Include(b => b.Borrowings)
+                    .ThenInclude(br => br.Member)
+                .Include(b => b.BookReviews)
+                    .ThenInclude(br => br.Member)
                 .FirstOrDefaultAsync(m => m.BookId == id);
 
             if (book == null)
                 return NotFound();
-
-            var activeBorrowings = book.Borrowings.Count(b => b.Status == "Emprestado");
-            ViewBag.HasActiveBorrowings = activeBorrowings > 0;
-            ViewBag.ActiveBorrowingsCount = activeBorrowings;
 
             return View(book);
         }
@@ -286,21 +280,39 @@ namespace LibraryManagementSystem.Controllers
         {
             var book = await _context.Books
                 .Include(b => b.Borrowings)
+                .Include(b => b.BookReviews)
+                .Include(b => b.Categories)
                 .FirstOrDefaultAsync(b => b.BookId == id);
 
             if (book != null)
             {
-                var activeBorrowings = book.Borrowings.Count(b => b.Status == "Emprestado");
-                if (activeBorrowings > 0)
+                // Check if book has active borrowings
+                var activeBorrowing = book.Borrowings.FirstOrDefault(b => b.Status == "Emprestado");
+                if (activeBorrowing != null)
                 {
-                    TempData["ErrorMessage"] = $"Não é possível eliminar o livro. Existem {activeBorrowings} empréstimos ativos.";
+                    TempData["ErrorMessage"] = $"Não é possível eliminar o livro '{book.Title}'. Está atualmente emprestado.";
                     return RedirectToAction(nameof(Delete), new { id = id });
                 }
 
+                // Remove all dependencies
+                if (book.BookReviews.Any())
+                {
+                    _context.BookReviews.RemoveRange(book.BookReviews);
+                }
+
+                if (book.Borrowings.Any())
+                {
+                    _context.Borrowings.RemoveRange(book.Borrowings);
+                }
+
+                // Clear many-to-many relationships
+                book.Categories.Clear();
+
+                // Remove the book
                 _context.Books.Remove(book);
                 await _context.SaveChangesAsync();
 
-                TempData["SuccessMessage"] = "Livro eliminado com sucesso!";
+                TempData["SuccessMessage"] = $"Livro '{book.Title}' e todas as suas dependências foram eliminados com sucesso!";
             }
 
             return RedirectToAction(nameof(Index));
@@ -324,60 +336,58 @@ namespace LibraryManagementSystem.Controllers
             return View(book);
         }
 
+        // POST: Books/ToggleAvailability (Form-based for Delete page)
         // POST: Books/ToggleAvailability
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ToggleAvailability([FromBody] ToggleRequest request)
+        public async Task<IActionResult> ToggleAvailability(Guid id)
         {
-            try
+            // Add debug logging
+            Console.WriteLine($"ToggleAvailability called with id: {id}");
+
+            if (id == Guid.Empty)
             {
-                var book = await _context.Books
-                    .Include(b => b.Borrowings)
-                    .FirstOrDefaultAsync(b => b.BookId == request.Id);
-
-                if (book == null)
-                {
-                    return Json(new { success = false, message = "Livro não encontrado." });
-                }
-
-                // Check if book is currently borrowed
-                var activeBorrowing = book.Borrowings?.FirstOrDefault(b => b.Status == "Emprestado");
-                if (activeBorrowing != null)
-                {
-                    return Json(new
-                    {
-                        success = false,
-                        message = "Não é possível alterar a disponibilidade. O livro está atualmente emprestado."
-                    });
-                }
-
-                // Toggle availability (between disponível and indisponível)
-                book.Available = !book.Available;
-                await _context.SaveChangesAsync();
-
-                var statusMessage = book.Available ? "disponível" : "indisponível";
-                return Json(new
-                {
-                    success = true,
-                    message = $"Livro marcado como {statusMessage} com sucesso.",
-                    newStatus = book.Available
-                });
+                TempData["ErrorMessage"] = "ID do livro inválido.";
+                return RedirectToAction(nameof(Index));
             }
-            catch (Exception)
+
+            var book = await _context.Books
+                .Include(b => b.Borrowings)
+                .FirstOrDefaultAsync(b => b.BookId == id);
+
+            if (book == null)
             {
-                return Json(new
-                {
-                    success = false,
-                    message = "Erro interno do servidor ao alterar disponibilidade."
-                });
+                TempData["ErrorMessage"] = "Livro não encontrado.";
+                return RedirectToAction(nameof(Index));
             }
+
+            // Check if book is currently borrowed
+            var activeBorrowing = book.Borrowings.FirstOrDefault(b => b.Status == "Emprestado");
+            if (activeBorrowing != null)
+            {
+                TempData["ErrorMessage"] = "Não é possível alterar a disponibilidade. O livro está atualmente emprestado.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            // Toggle availability
+            book.Available = !book.Available;
+            await _context.SaveChangesAsync();
+
+            var statusMessage = book.Available ? "disponível" : "indisponível";
+            TempData["SuccessMessage"] = $"Livro '{book.Title}' marcado como {statusMessage} com sucesso!";
+
+            return RedirectToAction(nameof(Index));
         }
+
 
         public class ToggleRequest
         {
             public Guid Id { get; set; }
         }
 
-
+        private bool BookExists(Guid id)
+        {
+            return _context.Books.Any(e => e.BookId == id);
+        }
     }
 }
