@@ -382,3 +382,68 @@ small {
     padding-left: 10px;
     padding-right: 10px;
 }
+.books-table {
+    table-layout: fixed !important;
+    width: 100%;
+}
+
+/* FIXED: Set specific column widths - Estado column sized for "Indisponível" */
+.books-table th:nth-child(1) { width: 25%; }  /* Livro */
+.books-table th:nth-child(2) { width: 10%; }  /* ISBN */
+.books-table th:nth-child(3) { width: 15%; }  /* Categorias */
+.books-table th:nth-child(4) { width: 5%; }   /* Ano */
+.books-table th:nth-child(5) { width: 12%; }  /* Estado - WIDER for "Indisponível" */
+.books-table th:nth-child(6) { width: 17%; }  /* Empréstimo Atual */
+.books-table th:nth-child(7) { width: 10%; }  /* Ações */
+
+/* FIXED: Ensure status column content doesn't wrap but has enough space */
+.books-table td:nth-child(5),
+.books-table th:nth-child(5) {
+    white-space: nowrap;
+    min-width: 150px; /* Minimum width for "Indisponível" + toggle button */
+}
+
+/* FIXED: Status badges with consistent width but no cutting */
+.status-badge-fixed {
+    display: inline-block;
+    min-width: 110px; /* Wide enough for "Indisponível" */
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* FIXED: Ensure toggle button fits alongside status */
+.toggle-btn {
+    margin-left: 4px !important;
+    padding: 2px 6px !important;
+    flex-shrink: 0; /* Prevent button from shrinking */
+}
+
+/* FIXED: Use flexbox for status cell to prevent overflow */
+.status-cell-content {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 4px;
+    width: 100%;
+}
+
+/* FIXED: Responsive adjustments */
+@media (max-width: 768px) {
+    .books-table th:nth-child(2),
+    .books-table td:nth-child(2) {
+        display: none; /* Hide ISBN on mobile */
+    }
+    
+    .books-table th:nth-child(3) { width: 20%; } /* Expand categories */
+    .books-table th:nth-child(5) { width: 18%; } /* Keep Estado wide enough */
+    .books-table th:nth-child(6) { width: 22%; } /* Adjust Empréstimo Atual */
+}
+
+@media (max-width: 576px) {
+    .status-badge-fixed {
+        min-width: 90px; /* Smaller on very small screens */
+        font-size: 0.75rem;
+    }
+    
+    .books-table th:nth-child(5) { width: 20%; } /* Even wider on small screens */
+}

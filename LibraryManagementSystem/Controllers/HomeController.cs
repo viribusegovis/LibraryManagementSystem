@@ -4,10 +4,11 @@ using LibraryManagementSystem.Data;
 using LibraryManagementSystem.Models;
 using LibraryManagementSystem.ViewModels;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 
 namespace LibraryManagementSystem.Controllers
 {
-    public class HomeController : BaseController
+    public class HomeController : Controller
     {
         private readonly LibraryContext _context;
 
@@ -52,45 +53,45 @@ namespace LibraryManagementSystem.Controllers
         [HttpGet]
         public async Task<IActionResult> GetTabContent(string tab)
         {
-            if (!User.Identity.IsAuthenticated)
+            var currentUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == User.Identity.Name);
+            if (currentUser == null)
             {
-                return Unauthorized();
+                return Json(new { success = false, message = "Utilizador não encontrado" });
             }
 
-            var currentUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == User.Identity.Name);
             var member = await _context.Members
-                .Include(m => m.Borrowings)
+                .Include(m => m.Borrowings.Where(b =>
+                    tab == "history" ? b.Status == "Devolvido" : // FIXED: Only delivered books for history
+                    tab == "borrowed" ? b.Status == "Emprestado" :
+                    tab == "overdue" ? b.Status == "Emprestado" && b.DueDate < DateTime.Now :
+                    true))
                     .ThenInclude(b => b.Book)
                         .ThenInclude(b => b.Categories)
-                .Include(m => m.Borrowings)
-                    .ThenInclude(b => b.Book)
-                        .ThenInclude(b => b.BookReviews)
-                            .ThenInclude(br => br.Member)
                 .FirstOrDefaultAsync(m => m.UserId == currentUser.Id);
 
-            List<BookViewModel> books;
-
-            switch (tab)
+            if (member == null)
             {
-                case "borrowed":
-                    books = await GetBorrowedBooks(member?.MemberId);
-                    break;
-                case "overdue":
-                    books = await GetOverdueBooks(member?.MemberId);
-                    break;
-                default:
-                    books = await GetAvailableBooks();
-                    break;
+                return Json(new { success = false, message = "Membro não encontrado" });
             }
 
             var viewModel = new MemberDashboardViewModel
             {
                 Member = member,
-                CurrentTab = tab,
-                Books = books
+                CurrentTab = tab
             };
 
-            return PartialView("_TabContent", viewModel);
+            switch (tab)
+            {
+                case "borrowed":
+                    return PartialView("_BorrowedTab", viewModel);
+                case "overdue":
+                    return PartialView("_OverdueTab", viewModel);
+                case "history":
+                    // FIXED: History tab shows only delivered books
+                    return PartialView("_HistoryTab", viewModel);
+                default:
+                    return PartialView("_BorrowedTab", viewModel);
+            }
         }
 
         [Authorize(Roles = "Membro")]

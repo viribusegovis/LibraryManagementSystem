@@ -1,3 +1,4 @@
+// Program.cs - FIXED: Only one Identity configuration
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using LibraryManagementSystem.Data;
@@ -14,23 +15,19 @@ builder.Services.AddRazorPages();
 builder.Services.AddDbContext<LibraryContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Default Identity with confirmation link on confirmation page
+// FIXED: Use AddDefaultIdentity with AddDefaultUI
 builder.Services.AddDefaultIdentity<IdentityUser>(options => {
-    // Email confirmation settings (shows link on confirmation page)
     options.SignIn.RequireConfirmedAccount = true;
-
-    // Password requirements
     options.Password.RequireDigit = true;
     options.Password.RequiredLength = 6;
     options.Password.RequireNonAlphanumeric = false;
     options.Password.RequireUppercase = false;
     options.Password.RequireLowercase = false;
-
-    // User settings
     options.User.RequireUniqueEmail = true;
 })
-.AddRoles<IdentityRole>()
-.AddEntityFrameworkStores<LibraryContext>();
+.AddRoles<IdentityRole>() // Add roles support
+.AddEntityFrameworkStores<LibraryContext>()
+.AddDefaultUI(); // CRITICAL: This makes ManageNav work
 
 // Configure application cookies
 builder.Services.ConfigureApplicationCookie(options =>
@@ -43,12 +40,12 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.SlidingExpiration = true;
 });
 
-// Add SignalR (required by evaluation document)
+// Add SignalR
 builder.Services.AddSignalR();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Configure the HTTP request pipeline
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -71,7 +68,6 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-// Root URL routing
 app.MapGet("/", async context =>
 {
     if (!context.User.Identity.IsAuthenticated)

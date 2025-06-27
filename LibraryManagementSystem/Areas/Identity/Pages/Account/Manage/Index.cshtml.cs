@@ -1,14 +1,14 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-#nullable disable
-
+﻿// Areas/Identity/Pages/Account/Manage/Index.cshtml.cs - Phone number made optional
 using System;
 using System.ComponentModel.DataAnnotations;
-using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
+using LibraryManagementSystem.Data;
+using LibraryManagementSystem.Models;
+using Microsoft.IdentityModel.Tokens;
 
 namespace LibraryManagementSystem.Areas.Identity.Pages.Account.Manage
 {
@@ -16,60 +16,70 @@ namespace LibraryManagementSystem.Areas.Identity.Pages.Account.Manage
     {
         private readonly UserManager<IdentityUser> _userManager;
         private readonly SignInManager<IdentityUser> _signInManager;
+        private readonly LibraryContext _context;
 
         public IndexModel(
             UserManager<IdentityUser> userManager,
-            SignInManager<IdentityUser> signInManager)
+            SignInManager<IdentityUser> signInManager,
+            LibraryContext context)
         {
             _userManager = userManager;
             _signInManager = signInManager;
+            _context = context;
         }
 
-        /// <summary>
-        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        ///     directly from your code. This API may change or be removed in future releases.
-        /// </summary>
         public string Username { get; set; }
 
-        /// <summary>
-        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        ///     directly from your code. This API may change or be removed in future releases.
-        /// </summary>
         [TempData]
         public string StatusMessage { get; set; }
 
-        /// <summary>
-        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        ///     directly from your code. This API may change or be removed in future releases.
-        /// </summary>
         [BindProperty]
         public InputModel Input { get; set; }
 
-        /// <summary>
-        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        ///     directly from your code. This API may change or be removed in future releases.
-        /// </summary>
         public class InputModel
         {
-            /// <summary>
-            ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-            ///     directly from your code. This API may change or be removed in future releases.
-            /// </summary>
-            [Phone]
-            [Display(Name = "Phone number")]
-            public string PhoneNumber { get; set; }
+            [Required(ErrorMessage = "O nome completo é obrigatório")]
+            [StringLength(100, ErrorMessage = "O nome não pode exceder 100 caracteres")]
+            [Display(Name = "Nome Completo")]
+            public string FullName { get; set; }
+
+            // FIXED: Made phone number optional by removing [Required] attribute
+            [StringLength(15, ErrorMessage = "O telefone não pode exceder 15 caracteres")]
+            [Phone(ErrorMessage = "Número de telefone inválido")]
+            [Display(Name = "Telefone")]
+            public string? PhoneNumber { get; set; } // Made nullable
+
+            [StringLength(200, ErrorMessage = "A morada não pode exceder 200 caracteres")]
+            [Display(Name = "Morada")]
+            public string? Address { get; set; }
+
+            [DataType(DataType.Date)]
+            [Display(Name = "Data de Nascimento")]
+            public DateTime? DateOfBirth { get; set; }
+
+            [Display(Name = "Email")]
+            public string Email { get; set; }
         }
 
         private async Task LoadAsync(IdentityUser user)
         {
             var userName = await _userManager.GetUserNameAsync(user);
             var phoneNumber = await _userManager.GetPhoneNumberAsync(user);
+            var email = await _userManager.GetEmailAsync(user);
 
             Username = userName;
 
+            // Load member information from database
+            var member = await _context.Members
+                .FirstOrDefaultAsync(m => m.UserId == user.Id);
+
             Input = new InputModel
             {
-                PhoneNumber = phoneNumber
+                FullName = member?.Name ?? "",
+                PhoneNumber = phoneNumber, // Can be null/empty
+                Address = member?.Address ?? "",
+                DateOfBirth = member?.DateOfBirth,
+                Email = email
             };
         }
 
@@ -78,7 +88,7 @@ namespace LibraryManagementSystem.Areas.Identity.Pages.Account.Manage
             var user = await _userManager.GetUserAsync(User);
             if (user == null)
             {
-                return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+                return NotFound($"Não foi possível carregar o utilizador com ID '{_userManager.GetUserId(User)}'.");
             }
 
             await LoadAsync(user);
@@ -87,10 +97,12 @@ namespace LibraryManagementSystem.Areas.Identity.Pages.Account.Manage
 
         public async Task<IActionResult> OnPostAsync()
         {
+            ModelState.Remove("Input.Email");
+
             var user = await _userManager.GetUserAsync(User);
             if (user == null)
             {
-                return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+                return NotFound($"Não foi possível carregar o utilizador com ID '{_userManager.GetUserId(User)}'.");
             }
 
             if (!ModelState.IsValid)
@@ -99,19 +111,36 @@ namespace LibraryManagementSystem.Areas.Identity.Pages.Account.Manage
                 return Page();
             }
 
+            // Update phone number in Identity (can be null/empty)
             var phoneNumber = await _userManager.GetPhoneNumberAsync(user);
             if (Input.PhoneNumber != phoneNumber)
             {
+                // FIXED: Handle null/empty phone numbers properly
                 var setPhoneResult = await _userManager.SetPhoneNumberAsync(user, Input.PhoneNumber);
                 if (!setPhoneResult.Succeeded)
                 {
-                    StatusMessage = "Unexpected error when trying to set phone number.";
+                    StatusMessage = "Erro inesperado ao tentar definir o número de telefone.";
                     return RedirectToPage();
                 }
             }
 
+            // Update member information in database
+            var member = await _context.Members
+                .FirstOrDefaultAsync(m => m.UserId == user.Id);
+
+            if (member != null)
+            {
+                member.Name = Input.FullName;
+                member.Phone = Input.PhoneNumber; // Can be null/empty
+                member.Address = Input.Address;
+                member.DateOfBirth = Input.DateOfBirth;
+                member.Email = Input.Email.IsNullOrEmpty()? user.Email : Input.Email;
+
+                await _context.SaveChangesAsync();
+            }
+
             await _signInManager.RefreshSignInAsync(user);
-            StatusMessage = "Your profile has been updated";
+            StatusMessage = "O seu perfil foi atualizado com sucesso.";
             return RedirectToPage();
         }
     }

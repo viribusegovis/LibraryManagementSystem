@@ -1,4 +1,4 @@
-﻿@* Views/Home/Index.cshtml - Simplified without Livros Disponíveis tab *@
+﻿@* Views/Home/Index.cshtml - Complete file with History tab *@
 @model LibraryManagementSystem.ViewModels.MemberDashboardViewModel
 @{
     ViewData["Title"] = "Biblioteca - Minha Área";
@@ -7,39 +7,6 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/css/member-dashboard.css" asp-append-version="true" />
-    <style>
-        .rating-display {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            padding: 5px 10px;
-            background: rgba(0,0,0,0.05);
-            border-radius: 15px;
-            font-size: 0.9rem;
-        }
-
-        .evaluation-restricted {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-radius: 8px;
-            padding: 10px;
-            text-align: center;
-            margin: 10px 0;
-        }
-
-        .can-evaluate {
-            background: #d4edda;
-            border: 1px solid #c3e6cb;
-            border-radius: 8px;
-            padding: 10px;
-            margin: 10px 0;
-        }
-
-        .loading-spinner {
-            text-align: center;
-            padding: 50px;
-        }
-    </style>
 }
 
 <div class="container-fluid custom-width-container member-container">
@@ -63,7 +30,7 @@
         </div>
     </div>
 
-    <!-- Simplified Bootstrap Tabs Navigation -->
+    <!-- Bootstrap Tabs Navigation with History -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="member-nav">
@@ -89,6 +56,20 @@
                                 @if (overdueCount > 0)
                                 {
                                     <span class="badge bg-danger ms-1">@overdueCount</span>
+                                }
+                            </button>
+                        </li>
+                        <!-- ADDED: History Tab -->
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link @(Model.CurrentTab == "history" ? "active" : "")"
+                                    id="history-tab" data-tab="history" type="button">
+                                <i class="fas fa-history me-2"></i>Histórico
+                                @{
+                                    var historyCount = Model.Member?.Borrowings?.Count(b => b.Status == "Devolvido") ?? 0;
+                                }
+                                @if (historyCount > 0)
+                                {
+                                    <span class="badge bg-info ms-1">@historyCount</span>
                                 }
                             </button>
                         </li>
@@ -148,7 +129,7 @@
         // Anti-forgery token for AJAX requests
         const token = $('input[name="__RequestVerificationToken"]').val();
 
-        // Simplified AJAX Tab Loading Function
+        // AJAX Tab Loading Function with History support
         function loadTabContent(tabName) {
             // Show loading spinner
             $('#tabContent').html('<div class="loading-spinner"><i class="fas fa-spinner fa-spin fa-2x"></i><p>A Carregar...</p></div>');
@@ -161,10 +142,36 @@
             $.get('@Url.Action("GetTabContent", "Home")', { tab: tabName })
                 .done(function(data) {
                     $('#tabContent').html(data);
+
+                    // ADDED: Initialize history-specific features
+                    if (tabName === 'history') {
+                        initializeHistoryFeatures();
+                    }
                 })
                 .fail(function() {
                     $('#tabContent').html('<div class="alert alert-danger">Erro ao carregar conteúdo. Tente novamente.</div>');
                 });
+        }
+
+        // ADDED: Initialize history-specific features
+        function initializeHistoryFeatures() {
+            // Add hover effects to history items
+            $('.history-item').hover(
+                function() {
+                    $(this).addClass('shadow-sm');
+                },
+                function() {
+                    $(this).removeClass('shadow-sm');
+                }
+            );
+
+            // Add click to expand functionality
+            $('.history-item').click(function() {
+                const details = $(this).find('.history-details');
+                if (details.length > 0) {
+                    details.slideToggle();
+                }
+            });
         }
 
         // Tab click event handlers
@@ -348,6 +355,41 @@
             .catch(error => {
                 console.error('Erro:', error);
                 alert('Erro ao adicionar comentário');
+            });
+        }
+
+        // ADDED: History-specific functions
+        function viewBookDetails(bookId) {
+            window.open(`@Url.Action("Details", "Books")/${bookId}`, '_blank');
+        }
+
+        function filterHistory(period) {
+            const historyItems = document.querySelectorAll('.history-item');
+            const now = new Date();
+            let cutoffDate;
+
+            switch(period) {
+                case 'month':
+                    cutoffDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+                    break;
+                case 'quarter':
+                    cutoffDate = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+                    break;
+                case 'year':
+                    cutoffDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+                    break;
+                default:
+                    // Show all
+                    historyItems.forEach(item => item.style.display = 'block');
+                    return;
+            }
+
+            historyItems.forEach(item => {
+                const dateStr = item.getAttribute('data-return-date');
+                if (dateStr) {
+                    const itemDate = new Date(dateStr);
+                    item.style.display = itemDate >= cutoffDate ? 'block' : 'none';
+                }
             });
         }
     </script>

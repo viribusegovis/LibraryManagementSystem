@@ -1,4 +1,4 @@
-﻿// Controllers/BooksController.cs - Fixed for Many-to-Many Categories
+﻿// Controllers/BooksController.cs - Three-state status logic, many-to-many categories, and toggle
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using LibraryManagementSystem.Data;
@@ -18,21 +18,20 @@ namespace LibraryManagementSystem.Controllers
             _context = context;
         }
 
-        // GET: Books - FIXED to use Categories properly
-        public async Task<IActionResult> Index(string searchString, Guid? categoryId, string sortOrder)
+        // GET: Books
+        public async Task<IActionResult> Index(string searchString, Guid? categoryId, string availability, string sortOrder)
         {
             ViewData["CurrentFilter"] = searchString;
             ViewData["TitleSortParm"] = String.IsNullOrEmpty(sortOrder) ? "title_desc" : "";
             ViewData["AuthorSortParm"] = sortOrder == "Author" ? "author_desc" : "Author";
 
-            // FIXED: Properly include Member navigation property
             var books = from b in _context.Books
                         .Include(b => b.Categories)
                         .Include(b => b.Borrowings.Where(br => br.Status == "Emprestado"))
-                            .ThenInclude(br => br.Member) // This loads the Member object
+                            .ThenInclude(br => br.Member)
                         select b;
 
-            // Search functionality
+            // Search filter
             if (!String.IsNullOrEmpty(searchString))
             {
                 books = books.Where(b => b.Title.Contains(searchString)
@@ -40,10 +39,30 @@ namespace LibraryManagementSystem.Controllers
                                       || b.ISBN.Contains(searchString));
             }
 
-            // Filter by category
+            // Category filter
             if (categoryId.HasValue)
             {
                 books = books.Where(b => b.Categories.Any(c => c.CategoryId == categoryId));
+            }
+
+            // State/Availability filter
+            if (!String.IsNullOrEmpty(availability))
+            {
+                switch (availability.ToLower())
+                {
+                    case "available":
+                        // Available: Available = true AND no active borrowings
+                        books = books.Where(b => b.Available && !b.Borrowings.Any(br => br.Status == "Emprestado"));
+                        break;
+                    case "borrowed":
+                        // Borrowed: Has active borrowings
+                        books = books.Where(b => b.Borrowings.Any(br => br.Status == "Emprestado"));
+                        break;
+                    case "unavailable":
+                        // Unavailable: Available = false AND no active borrowings
+                        books = books.Where(b => !b.Available && !b.Borrowings.Any(br => br.Status == "Emprestado"));
+                        break;
+                }
             }
 
             // Sorting
@@ -63,9 +82,9 @@ namespace LibraryManagementSystem.Controllers
                     break;
             }
 
-            // Categories for dropdown filter
             ViewBag.Categories = new SelectList(await _context.Categories.ToListAsync(), "CategoryId", "Name");
             ViewBag.SelectedCategory = categoryId;
+            ViewBag.SelectedAvailability = availability;
 
             return View(await books.ToListAsync());
         }
@@ -74,12 +93,10 @@ namespace LibraryManagementSystem.Controllers
         public async Task<IActionResult> Details(Guid? id)
         {
             if (id == null)
-            {
                 return NotFound();
-            }
 
             var book = await _context.Books
-                .Include(b => b.Categories) // FIXED: Use Categories collection
+                .Include(b => b.Categories)
                 .Include(b => b.Borrowings)
                     .ThenInclude(br => br.Member)
                 .Include(b => b.BookReviews)
@@ -87,28 +104,25 @@ namespace LibraryManagementSystem.Controllers
                 .FirstOrDefaultAsync(m => m.BookId == id);
 
             if (book == null)
-            {
                 return NotFound();
-            }
 
             return View(book);
         }
 
-        // GET: Books/Create - FIXED for many-to-many
+        // GET: Books/Create
         public async Task<IActionResult> Create()
         {
             ViewBag.Categories = new MultiSelectList(await _context.Categories.ToListAsync(), "CategoryId", "Name");
             return View();
         }
 
-        // POST: Books/Create - FIXED for many-to-many categories
+        // POST: Books/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Title,Author,ISBN,YearPublished,Available")] Book book, Guid[] selectedCategories)
         {
             if (ModelState.IsValid)
             {
-                // Check for duplicate ISBN
                 var existingBook = await _context.Books.FirstOrDefaultAsync(b => b.ISBN == book.ISBN);
                 if (existingBook != null)
                 {
@@ -120,7 +134,6 @@ namespace LibraryManagementSystem.Controllers
                 book.BookId = Guid.NewGuid();
                 book.CreatedDate = DateTime.Now;
 
-                // FIXED: Add selected categories to the book
                 if (selectedCategories != null && selectedCategories.Length > 0)
                 {
                     var categories = await _context.Categories
@@ -140,13 +153,11 @@ namespace LibraryManagementSystem.Controllers
             return View(book);
         }
 
-        // GET: Books/Edit/5 - FIXED for many-to-many
+        // GET: Books/Edit/5
         public async Task<IActionResult> Edit(Guid? id)
         {
             if (id == null)
-            {
                 return NotFound();
-            }
 
             var book = await _context.Books
                 .Include(b => b.Categories)
@@ -154,14 +165,13 @@ namespace LibraryManagementSystem.Controllers
                 .FirstOrDefaultAsync(b => b.BookId == id);
 
             if (book == null)
-            {
                 return NotFound();
-            }
 
-            // Warning if book is currently borrowed
-            if (!book.Available)
+            // Check if book is currently borrowed
+            var activeBorrowing = book.Borrowings.FirstOrDefault(b => b.Status == "Emprestado");
+            if (activeBorrowing != null)
             {
-                ViewBag.WarningMessage = "Atenção: Este livro está atualmente emprestado.";
+                ViewBag.WarningMessage = $"Atenção: Este livro está atualmente emprestado a {activeBorrowing.Member?.Name ?? "um membro"}.";
             }
 
             ViewBag.Categories = new MultiSelectList(
@@ -173,21 +183,19 @@ namespace LibraryManagementSystem.Controllers
             return View(book);
         }
 
-        // POST: Books/Edit/5 - FIXED for many-to-many categories
+        // POST: Books/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(Guid id, [Bind("BookId,Title,Author,ISBN,YearPublished,Available,CreatedDate")] Book book, Guid[] selectedCategories)
         {
             if (id != book.BookId)
-            {
                 return NotFound();
-            }
 
             if (ModelState.IsValid)
             {
                 try
                 {
-                    // Check for duplicate ISBN (excluding current book)
+                    // Check for duplicate ISBN
                     var existingBook = await _context.Books
                         .FirstOrDefaultAsync(b => b.ISBN == book.ISBN && b.BookId != book.BookId);
 
@@ -198,7 +206,7 @@ namespace LibraryManagementSystem.Controllers
                         return View(book);
                     }
 
-                    // FIXED: Load existing book with categories
+                    // Get existing book with categories
                     var existingBookWithCategories = await _context.Books
                         .Include(b => b.Categories)
                         .FirstOrDefaultAsync(b => b.BookId == id);
@@ -212,7 +220,7 @@ namespace LibraryManagementSystem.Controllers
                         existingBookWithCategories.YearPublished = book.YearPublished;
                         existingBookWithCategories.Available = book.Available;
 
-                        // FIXED: Update categories (many-to-many)
+                        // Update categories (many-to-many relationship)
                         existingBookWithCategories.Categories.Clear();
                         if (selectedCategories != null && selectedCategories.Length > 0)
                         {
@@ -234,13 +242,9 @@ namespace LibraryManagementSystem.Controllers
                 catch (DbUpdateConcurrencyException)
                 {
                     if (!BookExists(book.BookId))
-                    {
                         return NotFound();
-                    }
                     else
-                    {
                         throw;
-                    }
                 }
                 return RedirectToAction(nameof(Index));
             }
@@ -249,25 +253,25 @@ namespace LibraryManagementSystem.Controllers
             return View(book);
         }
 
-        // GET: Books/Delete/5 - FIXED to include Categories
+        private bool BookExists(Guid id)
+        {
+            return _context.Books.Any(e => e.BookId == id);
+        }
+
+        // GET: Books/Delete/5
         public async Task<IActionResult> Delete(Guid? id)
         {
             if (id == null)
-            {
                 return NotFound();
-            }
 
             var book = await _context.Books
-                .Include(b => b.Categories) // FIXED: Use Categories collection
+                .Include(b => b.Categories)
                 .Include(b => b.Borrowings)
                 .FirstOrDefaultAsync(m => m.BookId == id);
 
             if (book == null)
-            {
                 return NotFound();
-            }
 
-            // Check if book has active borrowings
             var activeBorrowings = book.Borrowings.Count(b => b.Status == "Emprestado");
             ViewBag.HasActiveBorrowings = activeBorrowings > 0;
             ViewBag.ActiveBorrowingsCount = activeBorrowings;
@@ -275,7 +279,7 @@ namespace LibraryManagementSystem.Controllers
             return View(book);
         }
 
-        // POST: Books/Delete/5 - No changes needed
+        // POST: Books/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
@@ -286,7 +290,6 @@ namespace LibraryManagementSystem.Controllers
 
             if (book != null)
             {
-                // Check if book has active borrowings
                 var activeBorrowings = book.Borrowings.Count(b => b.Status == "Emprestado");
                 if (activeBorrowings > 0)
                 {
@@ -303,90 +306,78 @@ namespace LibraryManagementSystem.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // GET: Books/BorrowingHistory/5 - FIXED to include Categories
+        // GET: Books/BorrowingHistory/5
         public async Task<IActionResult> BorrowingHistory(Guid? id)
         {
             if (id == null)
-            {
                 return NotFound();
-            }
 
             var book = await _context.Books
-                .Include(b => b.Categories) // FIXED: Use Categories collection
+                .Include(b => b.Categories)
                 .Include(b => b.Borrowings)
                     .ThenInclude(br => br.Member)
                 .FirstOrDefaultAsync(b => b.BookId == id);
 
             if (book == null)
-            {
                 return NotFound();
-            }
 
             return View(book);
         }
 
-        // POST: Books/ToggleAvailability/5 - No changes needed
+        // POST: Books/ToggleAvailability
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ToggleAvailability(Guid id)
+        public async Task<IActionResult> ToggleAvailability([FromBody] ToggleRequest request)
         {
-            var book = await _context.Books
-                .Include(b => b.Borrowings.Where(br => br.Status == "Emprestado"))
-                .FirstOrDefaultAsync(b => b.BookId == id);
-
-            if (book == null)
+            try
             {
-                return Json(new { success = false, message = "Livro não encontrado." });
-            }
+                var book = await _context.Books
+                    .Include(b => b.Borrowings)
+                    .FirstOrDefaultAsync(b => b.BookId == request.Id);
 
-            // Check if book has active borrowings before making it unavailable
-            if (book.Available)
-            {
-                var activeBorrowings = book.Borrowings.Count(b => b.Status == "Emprestado");
+                if (book == null)
+                {
+                    return Json(new { success = false, message = "Livro não encontrado." });
+                }
 
-                if (activeBorrowings > 0)
+                // Check if book is currently borrowed
+                var activeBorrowing = book.Borrowings?.FirstOrDefault(b => b.Status == "Emprestado");
+                if (activeBorrowing != null)
                 {
                     return Json(new
                     {
                         success = false,
-                        message = "Não é possível tornar o livro indisponível. Existe um empréstimo ativo."
+                        message = "Não é possível alterar a disponibilidade. O livro está atualmente emprestado."
                     });
                 }
 
-                // Mark as unavailable (manual override)
-                book.Available = false;
-            }
-            else
-            {
-                // Check if there are any active borrowings that should prevent making it available
-                var activeBorrowings = book.Borrowings.Count(b => b.Status == "Emprestado");
+                // Toggle availability (between disponível and indisponível)
+                book.Available = !book.Available;
+                await _context.SaveChangesAsync();
 
-                if (activeBorrowings > 0)
+                var statusMessage = book.Available ? "disponível" : "indisponível";
+                return Json(new
                 {
-                    return Json(new
-                    {
-                        success = false,
-                        message = "Não é possível tornar o livro disponível. Existe um empréstimo ativo que deve ser devolvido primeiro."
-                    });
-                }
-
-                // Mark as available
-                book.Available = true;
+                    success = true,
+                    message = $"Livro marcado como {statusMessage} com sucesso.",
+                    newStatus = book.Available
+                });
             }
-
-            await _context.SaveChangesAsync();
-
-            return Json(new
+            catch (Exception)
             {
-                success = true,
-                available = book.Available,
-                message = book.Available ? "Livro marcado como disponível." : "Livro marcado como indisponível."
-            });
+                return Json(new
+                {
+                    success = false,
+                    message = "Erro interno do servidor ao alterar disponibilidade."
+                });
+            }
         }
 
-        private bool BookExists(Guid id)
+        public class ToggleRequest
         {
-            return _context.Books.Any(e => e.BookId == id);
+            public Guid Id { get; set; }
         }
+
+
     }
 }

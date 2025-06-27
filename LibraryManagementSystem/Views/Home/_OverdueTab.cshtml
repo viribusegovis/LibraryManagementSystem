@@ -1,0 +1,142 @@
+﻿@* Views/Home/_OverdueTab.cshtml - FIXED *@
+@model LibraryManagementSystem.ViewModels.MemberDashboardViewModel
+
+<div class="row">
+    @{
+        // FIXED: Use proper type conversion and method calls
+        var overdueBooks = Model.Member?.Borrowings?
+        .Where(b => b.Status == "Emprestado" && b.DueDate < DateTime.Now)
+        .ToList() ?? new List<Borrowing>();
+    }
+
+    @if (overdueBooks.Any())
+    {
+        @foreach (var borrowing in overdueBooks)
+        {
+            <div class="col-lg-4 col-md-6 mb-4" id="book-@borrowing.Book.BookId">
+                <div class="card book-card h-100 border-danger">
+                    <div class="card-body">
+                        <!-- Book Info -->
+                        <div class="text-center mb-3">
+                            <i class="fas fa-book fa-3x text-danger mb-2"></i>
+                            <h6 class="card-title font-weight-bold">@borrowing.Book.Title</h6>
+                            <p class="text-muted mb-1">@borrowing.Book.Author</p>
+                            <small class="text-muted">
+                                <i class="fas fa-tag me-1"></i>
+                                @if (borrowing.Book.Categories != null && borrowing.Book.Categories.Any())
+                                {
+                                    @string.Join(", ", borrowing.Book.Categories.Select(c => c.Name))
+                                }
+                                else
+                                {
+                                    <text>Sem categoria</text>
+                                }
+                                |
+                                <i class="fas fa-calendar me-1"></i>@borrowing.Book.YearPublished
+                            </small>
+                        </div>
+
+                        <!-- Overdue Status -->
+                        <div class="text-center mb-3">
+                            <span class="status-badge status-overdue">
+                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                @((DateTime.Now - borrowing.DueDate).Days) dias em atraso
+                            </span>
+                            <br>
+                            <small class="text-danger mt-1">
+                                Prazo: @borrowing.DueDate.ToString("dd/MM/yyyy")
+                            </small>
+                        </div>
+
+                        <!-- Urgent Action Alert -->
+                        <div class="alert alert-danger text-center mb-3">
+                            <i class="fas fa-clock me-1"></i>
+                            <strong>Devolução Urgente!</strong><br>
+                            <small>Este livro deve ser devolvido o mais rápido possível</small>
+                        </div>
+
+                        <!-- Book Interactions -->
+                        <div class="book-interactions">
+                            <!-- Show ratings -->
+                            <div class="book-rating-display mb-3">
+                                <div class="d-flex justify-content-center gap-3">
+                                    <span class="rating-display">
+                                        <i class="fas fa-thumbs-up text-success"></i>
+                                        <span id="likes-@borrowing.Book.BookId">@(borrowing.Book.BookReviews?.Count(r => r.IsLike) ?? 0)</span>
+                                    </span>
+                                    <span class="rating-display">
+                                        <i class="fas fa-thumbs-down text-danger"></i>
+                                        <span id="dislikes-@borrowing.Book.BookId">@(borrowing.Book.BookReviews?.Count(r => !r.IsLike) ?? 0)</span>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Can evaluate overdue books -->
+                            <div class="can-evaluate">
+                                <div class="text-center mb-2">
+                                    <small class="text-warning">
+                                        <i class="fas fa-exclamation-circle me-1"></i>
+                                        Pode avaliar (mas devolva primeiro!)
+                                    </small>
+                                </div>
+                                <div class="d-flex justify-content-center gap-2 mb-3">
+                                    <button class="btn btn-outline-success btn-sm" onclick="rateBook('@borrowing.Book.BookId', true)">
+                                        <i class="fas fa-thumbs-up"></i> Gosto
+                                    </button>
+                                    <button class="btn btn-outline-danger btn-sm" onclick="rateBook('@borrowing.Book.BookId', false)">
+                                        <i class="fas fa-thumbs-down"></i> Não Gosto
+                                    </button>
+                                </div>
+
+                                <div class="d-flex justify-content-center">
+                                    <button class="btn btn-outline-secondary btn-sm"
+                                            onclick="addComment('@borrowing.Book.BookId', '@borrowing.Book.Title')">
+                                        <i class="fas fa-comment me-1"></i>Comentar
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Comments Section -->
+                            @{
+                                var comments = borrowing.Book.BookReviews?.Where(r => !string.IsNullOrEmpty(r.Comment)).ToList() ?? new List<BookReview>();
+                            }
+                            @if (comments.Any())
+                            {
+                                <div class="comments-section mt-3">
+                                    <h6 class="mb-2">
+                                        <i class="fas fa-comments me-1"></i>Comentários (@comments.Count())
+                                    </h6>
+                                    @foreach (var comment in comments.Take(2))
+                                    {
+                                        <div class="comment-item">
+                                            <div class="comment-meta">
+                                                @(comment.Member?.Name ?? "Utilizador") - @comment.ReviewDate.ToString("dd/MM/yyyy")
+                                            </div>
+                                            <div class="comment-text">@comment.Comment</div>
+                                        </div>
+                                    }
+                                    @if (comments.Count() > 2)
+                                    {
+                                        <small class="text-muted">
+                                            <i class="fas fa-plus me-1"></i>Mais @(comments.Count() - 2) comentários...
+                                        </small>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="col-12">
+            <div class="member-card text-center py-5">
+                <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
+                <h5 class="text-success">Parabéns! Nenhum livro em atraso</h5>
+                <p class="text-muted">Todos os seus empréstimos estão dentro do prazo.</p>
+            </div>
+        </div>
+    }
+</div>
