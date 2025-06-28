@@ -1,8 +1,11 @@
-﻿// Models/DTOs/BookDto.cs
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace LibraryManagementSystem.Models.DTOs
 {
+    /**
+     * DTO base para informações de livros na API
+     * Implementa projeção de dados para otimização de performance
+     */
     public class BookDto
     {
         public Guid BookId { get; set; }
@@ -11,21 +14,50 @@ namespace LibraryManagementSystem.Models.DTOs
         public string? ISBN { get; set; }
         public int? YearPublished { get; set; }
         public bool Available { get; set; }
+
+        /**
+         * Lista de nomes das categorias associadas
+         * Relacionamento muitos-para-muitos simplificado
+         */
         public List<string> Categories { get; set; } = new();
+
+        /* Estatísticas calculadas de avaliações */
         public int ReviewCount { get; set; }
         public double AverageRating { get; set; }
         public int LikesCount { get; set; }
         public int DislikesCount { get; set; }
     }
 
+    /**
+     * DTO detalhado para livros com relacionamentos completos
+     * Usado em endpoints que requerem informação completa
+     */
     public class BookDetailDto : BookDto
     {
         public DateTime CreatedDate { get; set; }
-        public List<CategoryDto> Categories { get; set; } = new();
+
+        /**
+         * Categorias com informação completa
+         * Relacionamento muitos-para-muitos detalhado
+         */
+        public new List<CategoryDto> Categories { get; set; } = new();
+
+        /**
+         * Lista de avaliações do livro
+         * Relacionamento muitos-para-um detalhado
+         */
         public List<ReviewDto> Reviews { get; set; } = new();
+
+        /**
+         * Estatísticas completas do livro
+         */
         public BookStatisticsDto Statistics { get; set; } = new();
     }
 
+    /**
+     * DTO para criação de novos livros
+     * Implementa validação adequada de dados conforme requisitos
+     */
     public class CreateBookDto
     {
         [Required(ErrorMessage = "O título é obrigatório")]
@@ -44,13 +76,24 @@ namespace LibraryManagementSystem.Models.DTOs
 
         public bool Available { get; set; } = true;
 
+        /**
+         * Lista de IDs das categorias a associar
+         * Suporta relacionamento muitos-para-muitos
+         */
         public List<Guid>? CategoryIds { get; set; }
     }
 
+    /**
+     * DTO para atualização de livros existentes
+     * Herda validações do CreateBookDto
+     */
     public class UpdateBookDto : CreateBookDto
     {
     }
 
+    /**
+     * DTO para informações de categorias
+     */
     public class CategoryDto
     {
         public Guid CategoryId { get; set; }
@@ -58,6 +101,10 @@ namespace LibraryManagementSystem.Models.DTOs
         public string? Description { get; set; }
     }
 
+    /**
+     * DTO para avaliações de livros
+     * Relacionamento muitos-para-um com Book e Member
+     */
     public class ReviewDto
     {
         public Guid ReviewId { get; set; }
@@ -68,6 +115,9 @@ namespace LibraryManagementSystem.Models.DTOs
         public DateTime ReviewDate { get; set; }
     }
 
+    /**
+     * DTO para estatísticas completas de livros
+     */
     public class BookStatisticsDto
     {
         public int TotalReviews { get; set; }

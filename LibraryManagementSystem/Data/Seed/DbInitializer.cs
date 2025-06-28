@@ -1,13 +1,23 @@
-﻿// Data/Seed/DbInitializer.cs - Fixed for Many-to-Many relationship
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using LibraryManagementSystem.Models;
 using LibraryManagementSystem.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace LibraryManagementSystem.Data.Seed
 {
+    /**
+     * Inicializador de dados para popular a base de dados com dados de teste
+     * Cria utilizadores, roles, categorias, livros, membros, empréstimos e avaliações
+     * Implementa relacionamentos muitos-para-um e muitos-para-muitos obrigatórios
+     */
     internal class DbInitializer
     {
+        /**
+         * Inicializa a base de dados com dados de teste completos
+         * 
+         * @param dbContext Contexto da base de dados Entity Framework
+         * @throws ArgumentNullException Se o contexto for nulo
+         */
         internal static async Task Initialize(LibraryContext dbContext)
         {
             ArgumentNullException.ThrowIfNull(dbContext, nameof(dbContext));
@@ -15,7 +25,7 @@ namespace LibraryManagementSystem.Data.Seed
 
             bool haAdicao = false;
 
-            // 1. CREATE ROLES FIRST
+            /* 1. CRIAR ROLES PRIMEIRO - Controlo de acesso obrigatório */
             if (!dbContext.Roles.Any())
             {
                 var roles = new[]
@@ -37,7 +47,7 @@ namespace LibraryManagementSystem.Data.Seed
                 haAdicao = true;
             }
 
-            // 2. CREATE CATEGORIES
+            /* 2. CRIAR CATEGORIAS - Relacionamento muitos-para-muitos com livros */
             var categorias = Array.Empty<Category>();
             if (!dbContext.Categories.Any())
             {
@@ -58,7 +68,7 @@ namespace LibraryManagementSystem.Data.Seed
                 categorias = dbContext.Categories.ToArray();
             }
 
-            // 3. CREATE USERS WITH PROPER PASSWORD HASHING
+            /* 3. CRIAR UTILIZADORES COM HASH DE PASSWORDS SEGURO */
             var newIdentityUsers = Array.Empty<IdentityUser>();
             var hasher = new PasswordHasher<IdentityUser>();
 
@@ -118,7 +128,7 @@ namespace LibraryManagementSystem.Data.Seed
                 newIdentityUsers = dbContext.Users.ToArray();
             }
 
-            // 4. ASSIGN USERS TO ROLES - CRITICAL STEP!
+            /* 4. ASSOCIAR UTILIZADORES A ROLES - PASSO CRÍTICO PARA CONTROLO DE ACESSO */
             if (!dbContext.UserRoles.Any())
             {
                 var userRoles = new[]
@@ -148,7 +158,7 @@ namespace LibraryManagementSystem.Data.Seed
                 haAdicao = true;
             }
 
-            // 5. CREATE MEMBERS - ALL LINKED TO USERS
+            /* 5. CRIAR MEMBROS - RELACIONAMENTO MUITOS-PARA-UM COM UTILIZADORES */
             var membros = Array.Empty<Member>();
             if (!dbContext.Members.Any())
             {
@@ -161,7 +171,7 @@ namespace LibraryManagementSystem.Data.Seed
                         CardNumber = "LIB001",
                         DateOfBirth = new DateTime(1990, 5, 15),
                         MembershipDate = DateTime.Now.AddMonths(-6),
-                        UserId = "membro1"
+                        UserId = "membro1" // Relacionamento com IdentityUser
                     },
                     new Member {
                         Name = "Maria Santos",
@@ -192,7 +202,7 @@ namespace LibraryManagementSystem.Data.Seed
                 membros = dbContext.Members.ToArray();
             }
 
-            // 6. CREATE BOOKS - REMOVED CategoryId (now many-to-many)
+            /* 6. CRIAR LIVROS - SEM CategoryId (agora relacionamento muitos-para-muitos) */
             var livros = Array.Empty<Book>();
             if (!dbContext.Books.Any())
             {
@@ -214,22 +224,22 @@ namespace LibraryManagementSystem.Data.Seed
                 livros = dbContext.Books.ToArray();
             }
 
-            // Save changes before assigning many-to-many relationships
+            /* Guardar alterações antes de associar relacionamentos muitos-para-muitos */
             if (haAdicao)
             {
                 await dbContext.SaveChangesAsync();
                 haAdicao = false;
             }
 
-            // 7. ASSIGN CATEGORIES TO BOOKS (Many-to-Many) - FIXED
+            /* 7. ASSOCIAR CATEGORIAS A LIVROS (MUITOS-PARA-MUITOS) - RELACIONAMENTO OBRIGATÓRIO */
             if (categorias.Length > 0 && livros.Length > 0)
             {
-                // Load books with their categories to check if already assigned
+                /* Carregar livros com categorias para verificar se já foram associados */
                 var booksWithCategories = await dbContext.Books
                     .Include(b => b.Categories)
                     .ToListAsync();
 
-                // O Alquimista - Ficção + História
+                /* O Alquimista - Ficção + História */
                 var livroAlquimista = booksWithCategories.FirstOrDefault(b => b.Title == "O Alquimista");
                 if (livroAlquimista != null && !livroAlquimista.Categories.Any())
                 {
@@ -238,7 +248,7 @@ namespace LibraryManagementSystem.Data.Seed
                     haAdicao = true;
                 }
 
-                // Dom Casmurro - Ficção + Literatura Clássica
+                /* Dom Casmurro - Ficção + Literatura Clássica */
                 var livroDomCasmurro = booksWithCategories.FirstOrDefault(b => b.Title == "Dom Casmurro");
                 if (livroDomCasmurro != null && !livroDomCasmurro.Categories.Any())
                 {
@@ -247,7 +257,7 @@ namespace LibraryManagementSystem.Data.Seed
                     haAdicao = true;
                 }
 
-                // 1984 - Ficção + História
+                /* 1984 - Ficção + História */
                 var livro1984 = booksWithCategories.FirstOrDefault(b => b.Title == "1984");
                 if (livro1984 != null && !livro1984.Categories.Any())
                 {
@@ -256,7 +266,7 @@ namespace LibraryManagementSystem.Data.Seed
                     haAdicao = true;
                 }
 
-                // Uma Breve História do Tempo - Ciência
+                /* Uma Breve História do Tempo - Ciência */
                 var livroHistoriaTempo = booksWithCategories.FirstOrDefault(b => b.Title == "Uma Breve História do Tempo");
                 if (livroHistoriaTempo != null && !livroHistoriaTempo.Categories.Any())
                 {
@@ -264,7 +274,7 @@ namespace LibraryManagementSystem.Data.Seed
                     haAdicao = true;
                 }
 
-                // O Pequeno Príncipe - Infantil + Arte
+                /* O Pequeno Príncipe - Infantil + Arte */
                 var livroPequenoPrincipe = booksWithCategories.FirstOrDefault(b => b.Title == "O Pequeno Príncipe");
                 if (livroPequenoPrincipe != null && !livroPequenoPrincipe.Categories.Any())
                 {
@@ -273,7 +283,7 @@ namespace LibraryManagementSystem.Data.Seed
                     haAdicao = true;
                 }
 
-                // Clean Code - Tecnologia + Ciência
+                /* Clean Code - Tecnologia + Ciência */
                 var livroCleanCode = booksWithCategories.FirstOrDefault(b => b.Title == "Clean Code");
                 if (livroCleanCode != null && !livroCleanCode.Categories.Any())
                 {
@@ -282,7 +292,7 @@ namespace LibraryManagementSystem.Data.Seed
                     haAdicao = true;
                 }
 
-                // Os Lusíadas - Literatura Clássica + História
+                /* Os Lusíadas - Literatura Clássica + História */
                 var livroLusiadas = booksWithCategories.FirstOrDefault(b => b.Title == "Os Lusíadas");
                 if (livroLusiadas != null && !livroLusiadas.Categories.Any())
                 {
@@ -291,7 +301,7 @@ namespace LibraryManagementSystem.Data.Seed
                     haAdicao = true;
                 }
 
-                // O Código Da Vinci - Ficção + História
+                /* O Código Da Vinci - Ficção + História */
                 var livroCodigoDaVinci = booksWithCategories.FirstOrDefault(b => b.Title == "O Código Da Vinci");
                 if (livroCodigoDaVinci != null && !livroCodigoDaVinci.Categories.Any())
                 {
@@ -301,18 +311,19 @@ namespace LibraryManagementSystem.Data.Seed
                 }
             }
 
-            // Save many-to-many relationships
+            /* Guardar relacionamentos muitos-para-muitos */
             if (haAdicao)
             {
                 await dbContext.SaveChangesAsync();
                 haAdicao = false;
             }
 
-            // 8. CREATE BORROWINGS INCLUDING OVERDUE
+            /* 8. CRIAR EMPRÉSTIMOS INCLUINDO EM ATRASO - RELACIONAMENTOS MUITOS-PARA-UM */
             if (!dbContext.Borrowings.Any() && livros.Length > 0 && membros.Length > 0)
             {
                 var emprestimos = new[]
                 {
+                    /* Empréstimo ativo dentro do prazo */
                     new Borrowing {
                         BookId = livros[0].BookId, // O Alquimista
                         MemberId = membros[0].MemberId, // João Silva
@@ -320,6 +331,7 @@ namespace LibraryManagementSystem.Data.Seed
                         DueDate = DateTime.Now.AddDays(4),
                         Status = "Emprestado"
                     },
+                    /* Empréstimo devolvido */
                     new Borrowing {
                         BookId = livros[2].BookId, // 1984
                         MemberId = membros[1].MemberId, // Maria Santos
@@ -328,19 +340,19 @@ namespace LibraryManagementSystem.Data.Seed
                         DueDate = DateTime.Now.AddDays(-1),
                         Status = "Devolvido"
                     },
-                    // OVERDUE ENTRIES
+                    /* EMPRÉSTIMOS EM ATRASO PARA TESTE */
                     new Borrowing {
                         BookId = livros[1].BookId, // Dom Casmurro
                         MemberId = membros[2].MemberId, // Pedro Costa
                         BorrowDate = DateTime.Now.AddDays(-25),
-                        DueDate = DateTime.Now.AddDays(-10), // 10 days overdue
+                        DueDate = DateTime.Now.AddDays(-10), // 10 dias em atraso
                         Status = "Emprestado"
                     },
                     new Borrowing {
                         BookId = livros[3].BookId, // Uma Breve História do Tempo
                         MemberId = membros[0].MemberId, // João Silva
                         BorrowDate = DateTime.Now.AddDays(-30),
-                        DueDate = DateTime.Now.AddDays(-5), // 5 days overdue
+                        DueDate = DateTime.Now.AddDays(-5), // 5 dias em atraso
                         Status = "Emprestado"
                     }
                 };
@@ -348,7 +360,7 @@ namespace LibraryManagementSystem.Data.Seed
                 haAdicao = true;
             }
 
-            // 9. CREATE BOOK REVIEWS FOR TESTING
+            /* 9. CRIAR AVALIAÇÕES DE LIVROS COM CLASSIFICAÇÕES - RELACIONAMENTOS MUITOS-PARA-UM */
             if (!dbContext.BookReviews.Any() && livros.Length > 0 && membros.Length > 0)
             {
                 var reviews = new[]
@@ -357,6 +369,7 @@ namespace LibraryManagementSystem.Data.Seed
                         BookId = livros[0].BookId, // O Alquimista
                         MemberId = membros[0].MemberId, // João Silva
                         IsLike = true,
+                        Rating = 4, // Classificação de 1-5 estrelas
                         Comment = "Livro inspirador e bem escrito!",
                         ReviewDate = DateTime.Now.AddDays(-5)
                     },
@@ -364,6 +377,7 @@ namespace LibraryManagementSystem.Data.Seed
                         BookId = livros[1].BookId, // Dom Casmurro
                         MemberId = membros[1].MemberId, // Maria Santos
                         IsLike = true,
+                        Rating = 5, // Classificação máxima
                         Comment = "Clássico da literatura brasileira, recomendo!",
                         ReviewDate = DateTime.Now.AddDays(-3)
                     },
@@ -371,19 +385,45 @@ namespace LibraryManagementSystem.Data.Seed
                         BookId = livros[2].BookId, // 1984
                         MemberId = membros[2].MemberId, // Pedro Costa
                         IsLike = false,
+                        Rating = 2, // Classificação baixa
                         Comment = "Muito pesado e depressivo para o meu gosto.",
                         ReviewDate = DateTime.Now.AddDays(-2)
+                    },
+                    /* AVALIAÇÕES ADICIONAIS PARA MELHOR TESTE */
+                    new BookReview {
+                        BookId = livros[5].BookId, // Clean Code
+                        MemberId = membros[0].MemberId, // João Silva
+                        IsLike = true,
+                        Rating = 4,
+                        Comment = "Excelente para programadores!",
+                        ReviewDate = DateTime.Now.AddDays(-8)
+                    },
+                    new BookReview {
+                        BookId = livros[3].BookId, // Uma Breve História do Tempo
+                        MemberId = membros[1].MemberId, // Maria Santos
+                        IsLike = true,
+                        Rating = 5,
+                        Comment = "Fascinante explicação da física moderna.",
+                        ReviewDate = DateTime.Now.AddDays(-12)
+                    },
+                    new BookReview {
+                        BookId = livros[4].BookId, // O Pequeno Príncipe
+                        MemberId = membros[2].MemberId, // Pedro Costa
+                        IsLike = true,
+                        Rating = 5,
+                        Comment = "Uma obra-prima atemporal!",
+                        ReviewDate = DateTime.Now.AddDays(-6)
                     }
                 };
                 await dbContext.BookReviews.AddRangeAsync(reviews);
                 haAdicao = true;
             }
 
+            /* GUARDAR FINAL COM TRATAMENTO DE ERROS */
             try
             {
                 if (haAdicao)
                 {
-                    // FINAL SAVE
                     await dbContext.SaveChangesAsync();
                 }
             }

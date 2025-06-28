@@ -19,9 +19,8 @@ builder.Services.AddRazorPages();
 builder.Services.AddDbContext<LibraryContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Add Identity
+// Add Identity - FIXED: This handles web authentication
 builder.Services.AddDefaultIdentity<IdentityUser>(options => {
-    options.SignIn.RequireConfirmedAccount = true;
     options.Password.RequireDigit = true;
     options.Password.RequiredLength = 6;
     options.Password.RequireNonAlphanumeric = false;
@@ -33,7 +32,7 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options => {
 .AddEntityFrameworkStores<LibraryContext>()
 .AddDefaultUI();
 
-// Configure application cookies
+// Configure application cookies - This handles web login
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/Identity/Account/Login";
@@ -44,26 +43,22 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.SlidingExpiration = true;
 });
 
-// FIXED: Add JWT Authentication BEFORE other services
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
+// FIXED: Add JWT ONLY for API endpoints - don't make it default
+builder.Services.AddAuthentication()
+    .AddJwtBearer(options =>
     {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"] ?? "LibraryManagementSystem",
-        ValidAudience = builder.Configuration["Jwt:Audience"] ?? "LibraryManagementSystem",
-        IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.ASCII.GetBytes(builder.Configuration["Jwt:SecretKey"] ?? "MinhaChaveSecretaSuperSeguraParaJWT123456789"))
-    };
-});
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"] ?? "LibraryManagementSystem",
+            ValidAudience = builder.Configuration["Jwt:Audience"] ?? "LibraryManagementSystem",
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.ASCII.GetBytes(builder.Configuration["Jwt:SecretKey"] ?? "MinhaChaveSecretaSuperSeguraParaJWT123456789"))
+        };
+    });
 
 // Add SignalR
 builder.Services.AddSignalR();
@@ -84,20 +79,9 @@ builder.Services.AddSwaggerGen(c =>
     {
         Title = "Sistema de Gestão de Biblioteca API",
         Version = "v1",
-        Description = "API para Sistema de Gestão de Biblioteca - Desenvolvimento Web - IPT",
-        Contact = new OpenApiContact
-        {
-            Name = "Licenciatura em Engenharia Informática - IPT",
-            Email = "dev@biblioteca.pt"
-        },
-        License = new OpenApiLicense
-        {
-            Name = "Instituto Politécnico de Tomar",
-            Url = new Uri("https://www.ipt.pt")
-        }
+        Description = "API para Sistema de Gestão de Biblioteca - Desenvolvimento Web - IPT"
     });
 
-    // FIXED: Add JWT authentication to Swagger
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Description = "JWT Authorization header using the Bearer scheme. Exemplo: \"Authorization: Bearer {token}\"",
@@ -121,14 +105,6 @@ builder.Services.AddSwaggerGen(c =>
             Array.Empty<string>()
         }
     });
-
-    // Include XML comments if available
-    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
-    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-    if (File.Exists(xmlPath))
-    {
-        c.IncludeXmlComments(xmlPath);
-    }
 });
 
 var app = builder.Build();
@@ -142,56 +118,47 @@ if (!app.Environment.IsDevelopment())
 else
 {
     app.UseItToSeedSqlServer();
-
-    // Enable Swagger in development
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Sistema de Gestão de Biblioteca API V1");
-        c.RoutePrefix = "api-docs"; // Access via /api-docs
-        c.DocumentTitle = "Sistema de Gestão de Biblioteca - API Documentation";
-        c.DefaultModelsExpandDepth(-1); // Hide schemas section
+        c.RoutePrefix = "api-docs";
     });
 }
-
-app.UseHttpsRedirection();
-app.UseStaticFiles();
-
-app.UseRouting();
-
-// FIXED: Authentication must come before Authorization
-app.UseAuthentication();
-app.UseAuthorization();
-
-app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
-
-// Map API controllers
-app.MapControllers();
-
 app.MapGet("/", async context =>
 {
     if (!context.User.Identity.IsAuthenticated)
     {
         context.Response.Redirect("/Identity/Account/Login");
+        return;
     }
-    else if (context.User.IsInRole("Bibliotecário"))
+
+    if (context.User.IsInRole("Bibliotecário"))
     {
         context.Response.Redirect("/Admin");
+        return;
     }
-    else if (context.User.IsInRole("Membro"))
+
+    if (context.User.IsInRole("Membro"))
     {
         context.Response.Redirect("/Home");
-    }
-    else
-    {
-        context.Response.Redirect("/Identity/Account/AccessDenied");
+        return;
     }
 
-    await Task.CompletedTask;
+    context.Response.Redirect("/Identity/Account/AccessDenied");
 });
+app.UseHttpsRedirection();
+app.UseStaticFiles();
+app.UseRouting();
 
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=Home}/{action=Index}");
+
+app.MapControllers();
 app.MapRazorPages();
 app.MapHub<BookReviewHub>("/bookReviewHub");
 

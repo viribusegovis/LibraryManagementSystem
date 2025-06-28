@@ -1,26 +1,39 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.SignalR;
 using LibraryManagementSystem.Data;
 using LibraryManagementSystem.Models;
-using LibraryManagementSystem.Hubs;
 using Microsoft.EntityFrameworkCore;
 
 namespace LibraryManagementSystem.Controllers
 {
+    /**
+     * Controlador para gestão de avaliações de livros pelos membros
+     * Implementa operações CRUD para avaliações (gostos, classificações, comentários).
+     * Controla acesso baseado em roles e valida regras de negócio.
+     */
     [Authorize]
     public class BookReviewsController : Controller
     {
         private readonly LibraryContext _context;
-        private readonly IHubContext<BookReviewHub> _hubContext;
 
-        public BookReviewsController(LibraryContext context, IHubContext<BookReviewHub> hubContext)
+        /**
+         * Inicializa o controlador com contexto da base de dados
+         * @param context Contexto Entity Framework para acesso aos dados
+         */
+        public BookReviewsController(LibraryContext context)
         {
-            _context = context;
-            _hubContext = hubContext;
+            _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        // POST: BookReviews/Create
+        /**
+         * Processa criação de nova avaliação de livro
+         * 
+         * @param BookId Identificador único do livro a avaliar (GUID)
+         * @param IsLike Indica se gosta (true) ou não gosta (false) do livro
+         * @param Comment Comentário opcional sobre o livro (máximo 1000 caracteres)
+         * @param Rating Classificação de 1 a 5 estrelas (opcional)
+         * @return Redirecionamento para página do livro com mensagem de sucesso ou erro
+         */
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "Membro")]
@@ -32,6 +45,7 @@ namespace LibraryManagementSystem.Controllers
                 return RedirectToAction("Index", "Home");
             }
 
+            /* Obter membro atual autenticado através do contexto de utilizador */
             var currentUser = await _context.Users.FirstOrDefaultAsync(u => u.UserName == User.Identity.Name);
             var member = await _context.Members.FirstOrDefaultAsync(m => m.UserId == currentUser.Id);
 
@@ -41,6 +55,7 @@ namespace LibraryManagementSystem.Controllers
                 return RedirectToAction("Index", "Home");
             }
 
+            /* Validar regra de negócio: só pode avaliar livros que já emprestou */
             var hasBorrowedBook = await _context.Borrowings
                 .AnyAsync(b => b.BookId == BookId && b.MemberId == member.MemberId);
 
@@ -50,6 +65,7 @@ namespace LibraryManagementSystem.Controllers
                 return RedirectToAction("View", "Books", new { id = BookId });
             }
 
+            /* Verificar se já avaliou este livro - evita avaliações duplicadas */
             var existingReview = await _context.BookReviews
                 .FirstOrDefaultAsync(r => r.BookId == BookId && r.MemberId == member.MemberId);
 
@@ -59,6 +75,7 @@ namespace LibraryManagementSystem.Controllers
                 return RedirectToAction("View", "Books", new { id = BookId });
             }
 
+            /* Criar nova avaliação com dados validados */
             var review = new BookReview
             {
                 BookReviewId = Guid.NewGuid(),
@@ -73,51 +90,16 @@ namespace LibraryManagementSystem.Controllers
             _context.BookReviews.Add(review);
             await _context.SaveChangesAsync();
 
-            // Broadcast updates (existing code)
-            var book = await _context.Books
-                .Include(b => b.BookReviews)
-                    .ThenInclude(r => r.Member)
-                .FirstOrDefaultAsync(b => b.BookId == BookId);
-
-            if (book != null)
-            {
-                var likes = book.BookReviews.Count(r => r.IsLike);
-                var dislikes = book.BookReviews.Count(r => !r.IsLike);
-                var totalReviews = book.BookReviews.Count;
-                var averageRating = book.BookReviews.Where(r => r.Rating.HasValue).Average(r => r.Rating) ?? 0;
-
-                try
-                {
-                    await _hubContext.Clients.Group($"Book_{BookId}").SendAsync("UpdateBookStats", new
-                    {
-                        bookId = BookId.ToString(),
-                        likes = likes,
-                        dislikes = dislikes,
-                        totalReviews = totalReviews,
-                        averageRating = Math.Round(averageRating, 1)
-                    });
-
-                    await _hubContext.Clients.Group($"Book_{BookId}").SendAsync("NewReview", new
-                    {
-                        reviewId = review.BookReviewId.ToString(),
-                        memberName = member.Name,
-                        isLike = review.IsLike,
-                        comment = review.Comment,
-                        rating = review.Rating,
-                        reviewDate = review.ReviewDate.ToString("dd/MM/yyyy HH:mm")
-                    });
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"SignalR Error: {ex.Message}");
-                }
-            }
-
             TempData["SuccessMessage"] = "Avaliação adicionada com sucesso!";
             return RedirectToAction("View", "Books", new { id = BookId });
         }
 
-        // GET: BookReviews/Edit/5
+        /**
+         * Apresenta formulário para editar avaliação existente
+         * 
+         * @param id Identificador único da avaliação a editar (GUID)
+         * @return Vista de edição com dados da avaliação ou redirecionamento em caso de erro
+         */
         [HttpGet]
         public async Task<IActionResult> Edit(Guid id)
         {
@@ -132,7 +114,7 @@ namespace LibraryManagementSystem.Controllers
                 return RedirectToAction("Index", "Home");
             }
 
-            // Check if user can edit this review
+            /* Verificar permissões: membros só podem editar as suas próprias avaliações */
             if (User.IsInRole("Membro"))
             {
                 var currentUser = await _context.Users.FirstOrDefaultAsync(u => u.UserName == User.Identity.Name);
@@ -148,7 +130,15 @@ namespace LibraryManagementSystem.Controllers
             return View(review);
         }
 
-        // POST: BookReviews/Edit/5
+        /**
+         * Processa edição de avaliação existente
+         * 
+         * @param id Identificador único da avaliação a atualizar (GUID)
+         * @param IsLike Nova indicação se gosta (true) ou não gosta (false) do livro
+         * @param Comment Novo comentário sobre o livro (máximo 1000 caracteres, opcional)
+         * @param Rating Nova classificação de 1 a 5 estrelas (opcional)
+         * @return Redirecionamento para página do livro com mensagem de sucesso ou erro
+         */
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(Guid id, bool IsLike, string? Comment, int? Rating)
@@ -164,7 +154,7 @@ namespace LibraryManagementSystem.Controllers
                 return RedirectToAction("Index", "Home");
             }
 
-            // Check permissions
+            /* Verificar permissões para edição - controlo de acesso */
             if (User.IsInRole("Membro"))
             {
                 var currentUser = await _context.Users.FirstOrDefaultAsync(u => u.UserName == User.Identity.Name);
@@ -177,48 +167,24 @@ namespace LibraryManagementSystem.Controllers
                 }
             }
 
-            // Update review
+            /* Atualizar dados da avaliação com novos valores */
             review.IsLike = IsLike;
             review.Comment = Comment?.Trim();
             review.Rating = Rating;
-            review.ReviewDate = DateTime.Now;
+            review.ReviewDate = DateTime.Now; // Atualizar timestamp de modificação
 
             await _context.SaveChangesAsync();
-
-            // Broadcast updates
-            var book = await _context.Books
-                .Include(b => b.BookReviews)
-                .FirstOrDefaultAsync(b => b.BookId == review.BookId);
-
-            if (book != null)
-            {
-                var likes = book.BookReviews.Count(r => r.IsLike);
-                var dislikes = book.BookReviews.Count(r => !r.IsLike);
-                var totalReviews = book.BookReviews.Count;
-                var averageRating = book.BookReviews.Where(r => r.Rating.HasValue).Average(r => r.Rating) ?? 0;
-
-                try
-                {
-                    await _hubContext.Clients.Group($"Book_{review.BookId}").SendAsync("UpdateBookStats", new
-                    {
-                        bookId = review.BookId.ToString(),
-                        likes = likes,
-                        dislikes = dislikes,
-                        totalReviews = totalReviews,
-                        averageRating = Math.Round(averageRating, 1)
-                    });
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"SignalR Error: {ex.Message}");
-                }
-            }
 
             TempData["SuccessMessage"] = "Avaliação atualizada com sucesso!";
             return RedirectToAction("View", "Books", new { id = review.BookId });
         }
 
-        // POST: BookReviews/Delete/5
+        /**
+         * Remove avaliação do sistema
+         * 
+         * @param id Identificador único da avaliação a eliminar (GUID)
+         * @return Redirecionamento para página apropriada baseado no tipo de utilizador
+         */
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(Guid id)
@@ -233,7 +199,7 @@ namespace LibraryManagementSystem.Controllers
                 var bookId = review.BookId;
                 var isAdminAction = User.IsInRole("Bibliotecário");
 
-                // Check permissions for members
+                /* Verificar permissões: membros só podem eliminar as suas próprias avaliações */
                 if (User.IsInRole("Membro"))
                 {
                     var currentUser = await _context.Users.FirstOrDefaultAsync(u => u.UserName == User.Identity.Name);
@@ -249,50 +215,16 @@ namespace LibraryManagementSystem.Controllers
                 _context.BookReviews.Remove(review);
                 await _context.SaveChangesAsync();
 
-                // Broadcast updates
-                var book = await _context.Books
-                    .Include(b => b.BookReviews)
-                    .FirstOrDefaultAsync(b => b.BookId == bookId);
-
-                if (book != null)
-                {
-                    var likes = book.BookReviews.Count(r => r.IsLike);
-                    var dislikes = book.BookReviews.Count(r => !r.IsLike);
-                    var totalReviews = book.BookReviews.Count;
-                    var averageRating = book.BookReviews.Where(r => r.Rating.HasValue).Average(r => r.Rating) ?? 0;
-
-                    try
-                    {
-                        await _hubContext.Clients.Group($"Book_{bookId}").SendAsync("UpdateBookStats", new
-                        {
-                            bookId = bookId.ToString(),
-                            likes = likes,
-                            dislikes = dislikes,
-                            totalReviews = totalReviews,
-                            averageRating = Math.Round(averageRating, 1)
-                        });
-
-                        await _hubContext.Clients.Group($"Book_{bookId}").SendAsync("ReviewDeleted", new
-                        {
-                            reviewId = id.ToString()
-                        });
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"SignalR Error: {ex.Message}");
-                    }
-                }
-
                 TempData["SuccessMessage"] = "Avaliação eliminada com sucesso!";
 
-                // FIXED: Redirect based on user role
+                /* Redirecionar baseado no tipo de utilizador - diferentes interfaces */
                 if (isAdminAction)
                 {
-                    return RedirectToAction("Details", "Books", new { id = bookId }); // Admin goes to admin details
+                    return RedirectToAction("Details", "Books", new { id = bookId }); // Admin -> interface administrativa
                 }
                 else
                 {
-                    return RedirectToAction("View", "Books", new { id = bookId }); // Member goes to public view
+                    return RedirectToAction("View", "Books", new { id = bookId }); // Membro -> interface pública
                 }
             }
 

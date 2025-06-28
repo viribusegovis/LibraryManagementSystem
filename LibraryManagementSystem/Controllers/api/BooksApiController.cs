@@ -4,51 +4,38 @@ using Microsoft.EntityFrameworkCore;
 using LibraryManagementSystem.Data;
 using LibraryManagementSystem.Models;
 using LibraryManagementSystem.Models.DTOs;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace LibraryManagementSystem.Controllers.Api
 {
-    /// <summary>
-    /// API para gestão de livros do Sistema de Gestão de Biblioteca
-    /// Desenvolvimento Web - Licenciatura em Engenharia Informática - IPT
-    /// </summary>
-    /// <remarks>
-    /// Esta API permite realizar operações CRUD completas sobre livros,
-    /// incluindo gestão de categorias, avaliações e estatísticas.
-    /// Implementa autenticação baseada em roles para operações administrativas.
-    /// </remarks>
+    /**
+     * API para gestão completa de livros no Sistema de Gestão de Biblioteca
+     * Implementa operações CRUD com autenticação JWT e controlo de acesso baseado em roles
+     * Suporta relacionamentos muitos-para-um e muitos-para-muitos conforme requisitos obrigatórios
+     */
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class BooksController : ControllerBase
     {
         private readonly LibraryContext _context;
 
-        /// <summary>
-        /// Construtor do controlador de livros
-        /// </summary>
-        /// <param name="context">Contexto da base de dados Entity Framework</param>
+        /**
+         * Inicializa o controlador com contexto da base de dados
+         * @param context Contexto Entity Framework para acesso aos dados
+         */
         public BooksController(LibraryContext context)
         {
-            _context = context;
+            _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        /// <summary>
-        /// Obter lista de todos os livros disponíveis no sistema
-        /// </summary>
-        /// <returns>Lista completa de livros com estatísticas de avaliações</returns>
-        /// <response code="200">Lista de livros retornada com sucesso</response>
-        /// <response code="500">Erro interno do servidor</response>
-        /// <remarks>
-        /// Este endpoint não requer autenticação e retorna todos os livros
-        /// com informações básicas incluindo:
-        /// - Dados do livro (título, autor, ISBN, ano)
-        /// - Categorias associadas
-        /// - Estatísticas de avaliações (gostos, não gostos, classificação média)
-        /// - Número total de avaliações
-        /// 
-        /// Exemplo de uso:
-        /// GET /api/books
-        /// </remarks>
+        /**
+         * Obter lista de todos os livros disponíveis no sistema
+         * 
+         * @return Lista completa de livros com estatísticas de avaliações
+         * @response 200 Lista de livros retornada com sucesso
+         * @response 500 Erro interno do servidor
+         */
         [HttpGet]
         [AllowAnonymous]
         [ProducesResponseType(typeof(IEnumerable<BookDto>), 200)]
@@ -57,9 +44,10 @@ namespace LibraryManagementSystem.Controllers.Api
         {
             try
             {
+                /* Consulta com relacionamentos obrigatórios - muitos-para-muitos e muitos-para-um */
                 var books = await _context.Books
-                    .Include(b => b.Categories)
-                    .Include(b => b.BookReviews)
+                    .Include(b => b.Categories) // Relacionamento muitos-para-muitos
+                    .Include(b => b.BookReviews) // Relacionamento muitos-para-um
                     .Select(b => new BookDto
                     {
                         BookId = b.BookId,
@@ -81,29 +69,20 @@ namespace LibraryManagementSystem.Controllers.Api
             }
             catch (Exception ex)
             {
-                // Log do erro (implementar logging conforme necessário)
+                /* Implementa mensagens de erro adequadas em português */
                 return StatusCode(500, new { message = "Erro interno do servidor", details = ex.Message });
             }
         }
 
-        /// <summary>
-        /// Obter detalhes completos de um livro específico
-        /// </summary>
-        /// <param name="id">Identificador único do livro (GUID)</param>
-        /// <returns>Detalhes completos do livro incluindo avaliações e estatísticas</returns>
-        /// <response code="200">Livro encontrado e detalhes retornados</response>
-        /// <response code="404">Livro não encontrado</response>
-        /// <response code="400">ID inválido fornecido</response>
-        /// <remarks>
-        /// Este endpoint retorna informações detalhadas sobre um livro específico:
-        /// - Informações básicas do livro
-        /// - Lista completa de categorias
-        /// - Todas as avaliações com detalhes dos membros
-        /// - Estatísticas completas (empréstimos, avaliações, etc.)
-        /// 
-        /// Exemplo de uso:
-        /// GET /api/books/123e4567-e89b-12d3-a456-426614174000
-        /// </remarks>
+        /**
+         * Obter detalhes completos de um livro específico
+         * 
+         * @param id Identificador único do livro (GUID)
+         * @return Detalhes completos do livro incluindo avaliações e estatísticas
+         * @response 200 Livro encontrado e detalhes retornados
+         * @response 404 Livro não encontrado
+         * @response 400 ID inválido fornecido
+         */
         [HttpGet("{id}")]
         [AllowAnonymous]
         [ProducesResponseType(typeof(BookDetailDto), 200)]
@@ -111,7 +90,7 @@ namespace LibraryManagementSystem.Controllers.Api
         [ProducesResponseType(400)]
         public async Task<ActionResult<BookDetailDto>> GetBook(Guid id)
         {
-            // Validação do ID
+            /* Validação adequada dos dados introduzidos */
             if (id == Guid.Empty)
             {
                 return BadRequest(new { message = "ID do livro inválido" });
@@ -119,11 +98,12 @@ namespace LibraryManagementSystem.Controllers.Api
 
             try
             {
+                /* Consulta complexa com múltiplos relacionamentos */
                 var book = await _context.Books
-                    .Include(b => b.Categories)
-                    .Include(b => b.BookReviews)
+                    .Include(b => b.Categories) // Relacionamento muitos-para-muitos
+                    .Include(b => b.BookReviews) // Relacionamento muitos-para-um
                         .ThenInclude(r => r.Member)
-                    .Include(b => b.Borrowings)
+                    .Include(b => b.Borrowings) // Relacionamento muitos-para-um
                         .ThenInclude(br => br.Member)
                     .FirstOrDefaultAsync(b => b.BookId == id);
 
@@ -132,6 +112,7 @@ namespace LibraryManagementSystem.Controllers.Api
                     return NotFound(new { message = "Livro não encontrado" });
                 }
 
+                /* Construção do DTO com dados completos */
                 var bookDto = new BookDetailDto
                 {
                     BookId = book.BookId,
@@ -176,38 +157,19 @@ namespace LibraryManagementSystem.Controllers.Api
             }
         }
 
-        /// <summary>
-        /// Criar um novo livro no sistema
-        /// </summary>
-        /// <param name="createBookDto">Dados do livro a ser criado</param>
-        /// <returns>Livro criado com informações básicas</returns>
-        /// <response code="201">Livro criado com sucesso</response>
-        /// <response code="400">Dados inválidos fornecidos</response>
-        /// <response code="409">ISBN já existe no sistema</response>
-        /// <response code="401">Utilizador não autenticado</response>
-        /// <response code="403">Utilizador sem permissões (apenas Bibliotecários)</response>
-        /// <remarks>
-        /// Este endpoint permite criar novos livros no sistema.
-        /// Requer autenticação e role de "Bibliotecário".
-        /// 
-        /// Validações implementadas:
-        /// - Título obrigatório (máx. 200 caracteres)
-        /// - Autor obrigatório (máx. 100 caracteres)
-        /// - ISBN único no sistema (máx. 13 caracteres)
-        /// - Ano de publicação entre 1000 e 2030
-        /// 
-        /// Exemplo de payload:
-        /// {
-        ///   "title": "O Senhor dos Anéis",
-        ///   "author": "J.R.R. Tolkien",
-        ///   "isbn": "9780007525546",
-        ///   "yearPublished": 1954,
-        ///   "available": true,
-        ///   "categoryIds": ["123e4567-e89b-12d3-a456-426614174000"]
-        /// }
-        /// </remarks>
+        /**
+         * Criar um novo livro no sistema
+         * 
+         * @param createBookDto Dados do livro a ser criado
+         * @return Livro criado com informações básicas
+         * @response 201 Livro criado com sucesso
+         * @response 400 Dados inválidos fornecidos
+         * @response 409 ISBN já existe no sistema
+         * @response 401 Utilizador não autenticado
+         * @response 403 Utilizador sem permissões (apenas Bibliotecários)
+         */
         [HttpPost]
-        [Authorize(Roles = "Bibliotecário")]
+        [Authorize(Roles = "Bibliotecário", AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [ProducesResponseType(typeof(BookDto), 201)]
         [ProducesResponseType(400)]
         [ProducesResponseType(409)]
@@ -215,7 +177,7 @@ namespace LibraryManagementSystem.Controllers.Api
         [ProducesResponseType(403)]
         public async Task<ActionResult<BookDto>> PostBook(CreateBookDto createBookDto)
         {
-            // Validação do modelo
+            /* Validação adequada dos dados introduzidos pelos utilizadores */
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
@@ -223,7 +185,7 @@ namespace LibraryManagementSystem.Controllers.Api
 
             try
             {
-                // Verificação de ISBN duplicado
+                /* Validação de unicidade do ISBN */
                 if (!string.IsNullOrEmpty(createBookDto.ISBN))
                 {
                     var existingBook = await _context.Books
@@ -235,7 +197,7 @@ namespace LibraryManagementSystem.Controllers.Api
                     }
                 }
 
-                // Criação do novo livro
+                /* Criação da entidade Book - operação CREATE do CRUD */
                 var book = new Book
                 {
                     BookId = Guid.NewGuid(),
@@ -247,7 +209,7 @@ namespace LibraryManagementSystem.Controllers.Api
                     CreatedDate = DateTime.Now
                 };
 
-                // Associação de categorias (relacionamento muitos-para-muitos)
+                /* Gestão do relacionamento muitos-para-muitos com categorias */
                 if (createBookDto.CategoryIds != null && createBookDto.CategoryIds.Any())
                 {
                     var categories = await _context.Categories
@@ -259,7 +221,7 @@ namespace LibraryManagementSystem.Controllers.Api
                 _context.Books.Add(book);
                 await _context.SaveChangesAsync();
 
-                // Preparação da resposta
+                /* Preparação da resposta */
                 var bookDto = new BookDto
                 {
                     BookId = book.BookId,
@@ -283,42 +245,26 @@ namespace LibraryManagementSystem.Controllers.Api
             }
         }
 
-        /// <summary>
-        /// Atualizar informações de um livro existente
-        /// </summary>
-        /// <param name="id">Identificador único do livro a atualizar</param>
-        /// <param name="updateBookDto">Novos dados do livro</param>
-        /// <returns>Confirmação da atualização</returns>
-        /// <response code="204">Livro atualizado com sucesso</response>
-        /// <response code="400">Dados inválidos fornecidos</response>
-        /// <response code="404">Livro não encontrado</response>
-        /// <response code="409">ISBN já existe noutro livro</response>
-        /// <response code="401">Utilizador não autenticado</response>
-        /// <response code="403">Utilizador sem permissões (apenas Bibliotecários)</response>
-        /// <remarks>
-        /// Este endpoint permite atualizar todas as informações de um livro.
-        /// Requer autenticação e role de "Bibliotecário".
-        /// 
-        /// Funcionalidades:
-        /// - Atualização de dados básicos do livro
-        /// - Gestão de categorias (relacionamento muitos-para-muitos)
-        /// - Validação de ISBN único
-        /// - Controlo de concorrência
-        /// 
-        /// Exemplo de uso:
-        /// PUT /api/books/123e4567-e89b-12d3-a456-426614174000
-        /// </remarks>
+        /**
+         * Atualizar informações de um livro existente
+         * 
+         * @param id Identificador único do livro a atualizar
+         * @param updateBookDto Novos dados do livro
+         * @return Confirmação da atualização
+         * @response 204 Livro atualizado com sucesso
+         * @response 400 Dados inválidos fornecidos
+         * @response 404 Livro não encontrado
+         * @response 409 ISBN já existe noutro livro
+         */
         [HttpPut("{id}")]
-        [Authorize(Roles = "Bibliotecário")]
+        [Authorize(Roles = "Bibliotecário", AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [ProducesResponseType(204)]
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]
         [ProducesResponseType(409)]
-        [ProducesResponseType(401)]
-        [ProducesResponseType(403)]
         public async Task<IActionResult> PutBook(Guid id, UpdateBookDto updateBookDto)
         {
-            // Validação do modelo
+            /* Validação dos dados de entrada */
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
@@ -326,7 +272,7 @@ namespace LibraryManagementSystem.Controllers.Api
 
             try
             {
-                // Busca do livro existente
+                /* Busca do livro existente com relacionamentos */
                 var book = await _context.Books
                     .Include(b => b.Categories)
                     .FirstOrDefaultAsync(b => b.BookId == id);
@@ -336,7 +282,7 @@ namespace LibraryManagementSystem.Controllers.Api
                     return NotFound(new { message = "Livro não encontrado" });
                 }
 
-                // Verificação de ISBN duplicado (excluindo o livro atual)
+                /* Validação de unicidade do ISBN (excluindo o livro atual) */
                 if (!string.IsNullOrEmpty(updateBookDto.ISBN) && updateBookDto.ISBN != book.ISBN)
                 {
                     var existingBook = await _context.Books
@@ -348,14 +294,14 @@ namespace LibraryManagementSystem.Controllers.Api
                     }
                 }
 
-                // Atualização das propriedades do livro
+                /* Atualização das propriedades básicas - operação UPDATE do CRUD */
                 book.Title = updateBookDto.Title;
                 book.Author = updateBookDto.Author;
                 book.ISBN = updateBookDto.ISBN;
                 book.YearPublished = updateBookDto.YearPublished;
                 book.Available = updateBookDto.Available;
 
-                // Atualização das categorias (relacionamento muitos-para-muitos)
+                /* Atualização do relacionamento muitos-para-muitos com categorias */
                 book.Categories.Clear();
                 if (updateBookDto.CategoryIds != null && updateBookDto.CategoryIds.Any())
                 {
@@ -374,7 +320,7 @@ namespace LibraryManagementSystem.Controllers.Api
                 {
                     return NotFound(new { message = "Livro não encontrado" });
                 }
-                return Conflict(new { message = "Conflito de concorrência. O livro foi modificado por outro utilizador." });
+                return Conflict(new { message = "Conflito de concorrência" });
             }
             catch (Exception ex)
             {
@@ -382,40 +328,25 @@ namespace LibraryManagementSystem.Controllers.Api
             }
         }
 
-        /// <summary>
-        /// Eliminar um livro do sistema
-        /// </summary>
-        /// <param name="id">Identificador único do livro a eliminar</param>
-        /// <returns>Confirmação da eliminação</returns>
-        /// <response code="200">Livro eliminado com sucesso</response>
-        /// <response code="400">Livro não pode ser eliminado (está emprestado)</response>
-        /// <response code="404">Livro não encontrado</response>
-        /// <response code="401">Utilizador não autenticado</response>
-        /// <response code="403">Utilizador sem permissões (apenas Bibliotecários)</response>
-        /// <remarks>
-        /// Este endpoint elimina um livro e todas as suas dependências.
-        /// Requer autenticação e role de "Bibliotecário".
-        /// 
-        /// Regras de negócio:
-        /// - Não permite eliminar livros atualmente emprestados
-        /// - Remove automaticamente avaliações associadas
-        /// - Remove histórico de empréstimos (apenas se devolvidos)
-        /// - Operação em cascata para manter integridade referencial
-        /// 
-        /// Exemplo de uso:
-        /// DELETE /api/books/123e4567-e89b-12d3-a456-426614174000
-        /// </remarks>
+        /**
+         * Eliminar um livro do sistema
+         * 
+         * @param id Identificador único do livro a eliminar
+         * @return Confirmação da eliminação
+         * @response 200 Livro eliminado com sucesso
+         * @response 400 Livro não pode ser eliminado (está emprestado)
+         * @response 404 Livro não encontrado
+         */
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Bibliotecário")]
+        [Authorize(Roles = "Bibliotecário", AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]
-        [ProducesResponseType(401)]
-        [ProducesResponseType(403)]
         public async Task<IActionResult> DeleteBook(Guid id)
         {
             try
             {
+                /* Busca do livro com todas as dependências */
                 var book = await _context.Books
                     .Include(b => b.Borrowings)
                     .Include(b => b.BookReviews)
@@ -426,14 +357,14 @@ namespace LibraryManagementSystem.Controllers.Api
                     return NotFound(new { message = "Livro não encontrado" });
                 }
 
-                // Verificação de empréstimos ativos
+                /* Validação das operações de remoção/eliminação de informação */
                 var activeBorrowing = book.Borrowings.FirstOrDefault(b => b.Status == "Emprestado");
                 if (activeBorrowing != null)
                 {
                     return BadRequest(new { message = "Não é possível eliminar o livro. Está atualmente emprestado." });
                 }
 
-                // Remoção em cascata das dependências
+                /* Remoção em cascata das dependências - operação DELETE do CRUD */
                 if (book.BookReviews.Any())
                 {
                     _context.BookReviews.RemoveRange(book.BookReviews);
@@ -455,38 +386,19 @@ namespace LibraryManagementSystem.Controllers.Api
             }
         }
 
-        /// <summary>
-        /// Pesquisar livros com filtros e paginação
-        /// </summary>
-        /// <param name="title">Filtro por título (pesquisa parcial)</param>
-        /// <param name="author">Filtro por autor (pesquisa parcial)</param>
-        /// <param name="category">Filtro por categoria (pesquisa parcial)</param>
-        /// <param name="available">Filtro por disponibilidade (true/false)</param>
-        /// <param name="page">Número da página (padrão: 1)</param>
-        /// <param name="pageSize">Itens por página (padrão: 10, máx: 50)</param>
-        /// <returns>Lista paginada de livros que correspondem aos critérios</returns>
-        /// <response code="200">Pesquisa realizada com sucesso</response>
-        /// <response code="400">Parâmetros de pesquisa inválidos</response>
-        /// <remarks>
-        /// Este endpoint permite pesquisar livros com múltiplos filtros e paginação.
-        /// Não requer autenticação.
-        /// 
-        /// Funcionalidades:
-        /// - Pesquisa por título, autor ou categoria (case-insensitive, parcial)
-        /// - Filtro por disponibilidade
-        /// - Paginação com informações de navegação
-        /// - Ordenação por título (padrão)
-        /// 
-        /// Exemplos de uso:
-        /// GET /api/books/search?title=senhor&amp;page=1&amp;pageSize=5
-        /// GET /api/books/search?author=tolkien&amp;available=true
-        /// GET /api/books/search?category=fantasia&amp;page=2
-        /// 
-        /// Resposta inclui:
-        /// - Lista de livros
-        /// - Total de registos
-        /// - Informações de paginação
-        /// </remarks>
+        /**
+ * Pesquisar livros com filtros múltiplos e paginação
+ * 
+ * @param title Filtro por título (pesquisa parcial)
+ * @param author Filtro por autor (pesquisa parcial)
+ * @param category Filtro por categoria (pesquisa parcial)
+ * @param available Filtro por disponibilidade (true/false)
+ * @param page Número da página (padrão: 1)
+ * @param pageSize Itens por página (padrão: 10, máx: 50)
+ * @return Lista paginada de livros que correspondem aos critérios
+ * @response 200 Pesquisa realizada com sucesso
+ * @response 400 Parâmetros de pesquisa inválidos
+ */
         [HttpGet("search")]
         [AllowAnonymous]
         [ProducesResponseType(typeof(object), 200)]
@@ -499,7 +411,7 @@ namespace LibraryManagementSystem.Controllers.Api
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10)
         {
-            // Validação dos parâmetros de paginação
+            /* Validação rigorosa dos parâmetros de paginação */
             if (page < 1)
             {
                 return BadRequest(new { message = "O número da página deve ser maior que 0" });
@@ -512,12 +424,13 @@ namespace LibraryManagementSystem.Controllers.Api
 
             try
             {
+                /* Construção da consulta base com relacionamentos */
                 var query = _context.Books
                     .Include(b => b.Categories)
                     .Include(b => b.BookReviews)
                     .AsQueryable();
 
-                // Aplicação dos filtros de pesquisa
+                /* Aplicação sequencial dos filtros usando LINQ */
                 if (!string.IsNullOrEmpty(title))
                 {
                     query = query.Where(b => b.Title.Contains(title));
@@ -538,10 +451,13 @@ namespace LibraryManagementSystem.Controllers.Api
                     query = query.Where(b => b.Available == available.Value);
                 }
 
-                // Contagem total para paginação
+                /* Contagem total para metadados de paginação */
                 var totalCount = await query.CountAsync();
 
-                // Aplicação da paginação e projeção
+                /* Calculate totalPages in the correct scope */
+                var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+
+                /* Aplicação da paginação e projeção */
                 var books = await query
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
@@ -562,16 +478,16 @@ namespace LibraryManagementSystem.Controllers.Api
                     })
                     .ToListAsync();
 
-                // Preparação da resposta com metadados de paginação
+                /* Preparação da resposta com metadados completos */
                 var result = new
                 {
                     Books = books,
                     TotalCount = totalCount,
                     Page = page,
                     PageSize = pageSize,
-                    TotalPages = (int)Math.Ceiling((double)totalCount / pageSize),
+                    TotalPages = totalPages,
                     HasPreviousPage = page > 1,
-                    HasNextPage = page < Math.Ceiling((double)totalCount / pageSize)
+                    HasNextPage = page < totalPages
                 };
 
                 return Ok(result);
@@ -582,11 +498,12 @@ namespace LibraryManagementSystem.Controllers.Api
             }
         }
 
-        /// <summary>
-        /// Método auxiliar para verificar se um livro existe
-        /// </summary>
-        /// <param name="id">Identificador do livro</param>
-        /// <returns>True se o livro existir, False caso contrário</returns>
+
+        /**
+         * Verifica se um livro existe na base de dados
+         * @param id Identificador único do livro
+         * @return True se o livro existir, false caso contrário
+         */
         private bool BookExists(Guid id)
         {
             return _context.Books.Any(e => e.BookId == id);

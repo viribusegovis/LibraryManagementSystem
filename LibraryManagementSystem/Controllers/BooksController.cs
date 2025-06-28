@@ -1,5 +1,4 @@
-﻿// Controllers/BooksController.cs - Complete with member view and admin functionality
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using LibraryManagementSystem.Data;
 using LibraryManagementSystem.Models;
@@ -8,16 +7,33 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace LibraryManagementSystem.Controllers
 {
+    /**
+     * Controlador principal para gestão de livros da biblioteca
+     * Implementa operações CRUD completas com diferentes interfaces para administradores e membros.
+     * Gere relacionamentos muitos-para-muitos com categorias e controla acesso baseado em roles.
+     */
     public class BooksController : Controller
     {
         private readonly LibraryContext _context;
 
+        /**
+         * Inicializa o controlador com contexto da base de dados
+         * @param context Contexto Entity Framework para acesso aos dados
+         */
         public BooksController(LibraryContext context)
         {
             _context = context;
         }
 
-        // GET: Books - Admin Index (Librarians only)
+        /**
+         * Lista administrativa de livros com filtros e ordenação
+         * 
+         * @param searchString Termo de pesquisa para título, autor ou ISBN
+         * @param categoryId ID da categoria para filtrar livros
+         * @param availability Estado de disponibilidade (available, borrowed, unavailable)
+         * @param sortOrder Critério de ordenação (title, author, etc.)
+         * @return Vista administrativa com lista filtrada de livros
+         */
         [Authorize(Roles = "Bibliotecário")]
         public async Task<IActionResult> Index(string searchString, Guid? categoryId, string availability, string sortOrder)
         {
@@ -25,13 +41,14 @@ namespace LibraryManagementSystem.Controllers
             ViewData["TitleSortParm"] = String.IsNullOrEmpty(sortOrder) ? "title_desc" : "";
             ViewData["AuthorSortParm"] = sortOrder == "Author" ? "author_desc" : "Author";
 
+            /* Consulta base com relacionamentos necessários */
             var books = from b in _context.Books
                         .Include(b => b.Categories)
                         .Include(b => b.Borrowings.Where(br => br.Status == "Emprestado"))
                             .ThenInclude(br => br.Member)
                         select b;
 
-            // Search filter
+            /* Aplicar filtros de pesquisa */
             if (!String.IsNullOrEmpty(searchString))
             {
                 books = books.Where(b => b.Title.Contains(searchString)
@@ -39,13 +56,13 @@ namespace LibraryManagementSystem.Controllers
                                       || b.ISBN.Contains(searchString));
             }
 
-            // Category filter
+            /* Filtro por categoria */
             if (categoryId.HasValue)
             {
                 books = books.Where(b => b.Categories.Any(c => c.CategoryId == categoryId));
             }
 
-            // State/Availability filter
+            /* Filtro por estado de disponibilidade */
             if (!String.IsNullOrEmpty(availability))
             {
                 switch (availability.ToLower())
@@ -62,7 +79,7 @@ namespace LibraryManagementSystem.Controllers
                 }
             }
 
-            // Sorting
+            /* Aplicar ordenação */
             switch (sortOrder)
             {
                 case "title_desc":
@@ -86,13 +103,19 @@ namespace LibraryManagementSystem.Controllers
             return View(await books.ToListAsync());
         }
 
-        // GET: Books/Details/5 - Admin Details (Librarians only)
+        /**
+         * Detalhes administrativos de um livro específico
+         * 
+         * @param id Identificador único do livro (GUID)
+         * @return Vista com detalhes completos do livro para administradores
+         */
         [Authorize(Roles = "Bibliotecário")]
         public async Task<IActionResult> Details(Guid? id)
         {
             if (id == null)
                 return NotFound();
 
+            /* Carregar livro com todos os relacionamentos para vista administrativa */
             var book = await _context.Books
                 .Include(b => b.Categories)
                 .Include(b => b.Borrowings)
@@ -107,8 +130,12 @@ namespace LibraryManagementSystem.Controllers
             return View(book);
         }
 
-        // GET: Books/View/5 - Member View (Public access)
-        // In BooksController.cs - Update View action
+        /**
+         * Vista pública de livro para membros
+         * 
+         * @param id Identificador único do livro (GUID)
+         * @return Vista pública com detalhes do livro e opções de avaliação
+         */
         [AllowAnonymous]
         public async Task<IActionResult> View(Guid? id)
         {
@@ -126,7 +153,7 @@ namespace LibraryManagementSystem.Controllers
             if (book == null)
                 return NotFound();
 
-            // Check borrowing and review status for authenticated members
+            /* Verificar estado de empréstimo e avaliação para membros autenticados */
             if (User.Identity.IsAuthenticated && User.IsInRole("Membro"))
             {
                 var currentUser = await _context.Users.FirstOrDefaultAsync(u => u.UserName == User.Identity.Name);
@@ -134,10 +161,9 @@ namespace LibraryManagementSystem.Controllers
 
                 if (member != null)
                 {
-                    ViewBag.CurrentMemberId = member.MemberId.ToString(); // Add this line
+                    ViewBag.CurrentMemberId = member.MemberId.ToString();
                     ViewBag.HasBorrowedBook = await _context.Borrowings
                         .AnyAsync(b => b.BookId == id && b.MemberId == member.MemberId);
-
                     ViewBag.HasReviewed = await _context.BookReviews
                         .AnyAsync(r => r.BookId == id && r.MemberId == member.MemberId);
                 }
@@ -158,8 +184,10 @@ namespace LibraryManagementSystem.Controllers
             return View("MemberDetails", book);
         }
 
-
-        // GET: Books/Create
+        /**
+         * Apresenta formulário para criar novo livro
+         * @return Vista de criação com lista de categorias disponíveis
+         */
         [Authorize(Roles = "Bibliotecário")]
         public async Task<IActionResult> Create()
         {
@@ -167,7 +195,13 @@ namespace LibraryManagementSystem.Controllers
             return View();
         }
 
-        // POST: Books/Create
+        /**
+         * Processa criação de novo livro
+         * 
+         * @param book Dados do livro a criar
+         * @param selectedCategories Array de IDs das categorias selecionadas
+         * @return Redirecionamento para lista ou vista de criação em caso de erro
+         */
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "Bibliotecário")]
@@ -175,6 +209,7 @@ namespace LibraryManagementSystem.Controllers
         {
             if (ModelState.IsValid)
             {
+                /* Validar unicidade do ISBN */
                 var existingBook = await _context.Books.FirstOrDefaultAsync(b => b.ISBN == book.ISBN);
                 if (existingBook != null)
                 {
@@ -186,6 +221,7 @@ namespace LibraryManagementSystem.Controllers
                 book.BookId = Guid.NewGuid();
                 book.CreatedDate = DateTime.Now;
 
+                /* Associar categorias selecionadas - relacionamento muitos-para-muitos */
                 if (selectedCategories != null && selectedCategories.Length > 0)
                 {
                     var categories = await _context.Categories
@@ -205,7 +241,12 @@ namespace LibraryManagementSystem.Controllers
             return View(book);
         }
 
-        // GET: Books/Edit/5
+        /**
+         * Apresenta formulário para editar livro existente
+         * 
+         * @param id Identificador único do livro a editar (GUID)
+         * @return Vista de edição com dados do livro e categorias
+         */
         [Authorize(Roles = "Bibliotecário")]
         public async Task<IActionResult> Edit(Guid? id)
         {
@@ -220,7 +261,7 @@ namespace LibraryManagementSystem.Controllers
             if (book == null)
                 return NotFound();
 
-            // Check if book is currently borrowed
+            /* Verificar se livro está emprestado - aviso para administrador */
             var activeBorrowing = book.Borrowings.FirstOrDefault(b => b.Status == "Emprestado");
             if (activeBorrowing != null)
             {
@@ -236,7 +277,14 @@ namespace LibraryManagementSystem.Controllers
             return View(book);
         }
 
-        // POST: Books/Edit/5
+        /**
+         * Processa edição de livro existente
+         * 
+         * @param id Identificador único do livro
+         * @param book Dados atualizados do livro
+         * @param selectedCategories Array de IDs das categorias selecionadas
+         * @return Redirecionamento para lista ou vista de edição em caso de erro
+         */
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "Bibliotecário")]
@@ -249,7 +297,7 @@ namespace LibraryManagementSystem.Controllers
             {
                 try
                 {
-                    // Check for duplicate ISBN
+                    /* Verificar duplicação de ISBN */
                     var existingBook = await _context.Books
                         .FirstOrDefaultAsync(b => b.ISBN == book.ISBN && b.BookId != book.BookId);
 
@@ -260,21 +308,21 @@ namespace LibraryManagementSystem.Controllers
                         return View(book);
                     }
 
-                    // Get existing book with categories
+                    /* Carregar livro existente com categorias para atualização */
                     var existingBookWithCategories = await _context.Books
                         .Include(b => b.Categories)
                         .FirstOrDefaultAsync(b => b.BookId == id);
 
                     if (existingBookWithCategories != null)
                     {
-                        // Update basic properties
+                        /* Atualizar propriedades básicas */
                         existingBookWithCategories.Title = book.Title;
                         existingBookWithCategories.Author = book.Author;
                         existingBookWithCategories.ISBN = book.ISBN;
                         existingBookWithCategories.YearPublished = book.YearPublished;
                         existingBookWithCategories.Available = book.Available;
 
-                        // Update categories (many-to-many relationship)
+                        /* Atualizar relacionamento muitos-para-muitos com categorias */
                         existingBookWithCategories.Categories.Clear();
                         if (selectedCategories != null && selectedCategories.Length > 0)
                         {
@@ -307,7 +355,12 @@ namespace LibraryManagementSystem.Controllers
             return View(book);
         }
 
-        // GET: Books/Delete/5
+        /**
+         * Apresenta confirmação para eliminar livro
+         * 
+         * @param id Identificador único do livro a eliminar (GUID)
+         * @return Vista de confirmação com detalhes do livro
+         */
         [Authorize(Roles = "Bibliotecário")]
         public async Task<IActionResult> Delete(Guid? id)
         {
@@ -328,7 +381,12 @@ namespace LibraryManagementSystem.Controllers
             return View(book);
         }
 
-        // POST: Books/Delete/5
+        /**
+         * Processa eliminação de livro com validações de integridade
+         * 
+         * @param id Identificador único do livro a eliminar
+         * @return Redirecionamento para lista com mensagem de sucesso ou erro
+         */
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "Bibliotecário")]
@@ -342,7 +400,7 @@ namespace LibraryManagementSystem.Controllers
 
             if (book != null)
             {
-                // Check if book has active borrowings
+                /* Verificar se livro tem empréstimos ativos */
                 var activeBorrowing = book.Borrowings.FirstOrDefault(b => b.Status == "Emprestado");
                 if (activeBorrowing != null)
                 {
@@ -350,7 +408,7 @@ namespace LibraryManagementSystem.Controllers
                     return RedirectToAction(nameof(Delete), new { id = id });
                 }
 
-                // Remove all dependencies
+                /* Remover dependências em cascata */
                 if (book.BookReviews.Any())
                 {
                     _context.BookReviews.RemoveRange(book.BookReviews);
@@ -361,10 +419,9 @@ namespace LibraryManagementSystem.Controllers
                     _context.Borrowings.RemoveRange(book.Borrowings);
                 }
 
-                // Clear many-to-many relationships
+                /* Limpar relacionamentos muitos-para-muitos */
                 book.Categories.Clear();
 
-                // Remove the book
                 _context.Books.Remove(book);
                 await _context.SaveChangesAsync();
 
@@ -374,7 +431,12 @@ namespace LibraryManagementSystem.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // GET: Books/BorrowingHistory/5
+        /**
+         * Apresenta histórico de empréstimos de um livro
+         * 
+         * @param id Identificador único do livro (GUID)
+         * @return Vista com histórico completo de empréstimos
+         */
         [Authorize(Roles = "Bibliotecário")]
         public async Task<IActionResult> BorrowingHistory(Guid? id)
         {
@@ -393,7 +455,12 @@ namespace LibraryManagementSystem.Controllers
             return View(book);
         }
 
-        // POST: Books/ToggleAvailability
+        /**
+         * Alterna estado de disponibilidade de um livro
+         * 
+         * @param id Identificador único do livro (GUID)
+         * @return Redirecionamento para lista com mensagem de confirmação
+         */
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "Bibliotecário")]
@@ -415,7 +482,7 @@ namespace LibraryManagementSystem.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // Check if book is currently borrowed
+            /* Verificar se livro está emprestado antes de alterar disponibilidade */
             var activeBorrowing = book.Borrowings.FirstOrDefault(b => b.Status == "Emprestado");
             if (activeBorrowing != null)
             {
@@ -423,7 +490,6 @@ namespace LibraryManagementSystem.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // Toggle availability
             book.Available = !book.Available;
             await _context.SaveChangesAsync();
 
@@ -433,6 +499,11 @@ namespace LibraryManagementSystem.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        /**
+         * Verifica se um livro existe na base de dados
+         * @param id Identificador único do livro
+         * @return True se o livro existir, false caso contrário
+         */
         private bool BookExists(Guid id)
         {
             return _context.Books.Any(e => e.BookId == id);

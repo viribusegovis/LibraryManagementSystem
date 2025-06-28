@@ -8,15 +8,30 @@ using Microsoft.AspNetCore.Identity;
 
 namespace LibraryManagementSystem.Controllers
 {
+    /**
+     * Controlador principal para interface de membros da biblioteca
+     * Implementa dashboard do membro, catálogo de livros e histórico de empréstimos.
+     * Gere acesso diferenciado entre bibliotecários e membros.
+     */
     public class HomeController : Controller
     {
         private readonly LibraryContext _context;
 
+        /**
+         * Inicializa o controlador com contexto da base de dados
+         * @param context Contexto Entity Framework para acesso aos dados
+         */
         public HomeController(LibraryContext context)
         {
             _context = context;
         }
 
+        /**
+         * Dashboard principal do membro com abas dinâmicas
+         * 
+         * @param tab Aba ativa (available, borrowed, overdue, history)
+         * @return Vista do dashboard ou redirecionamento baseado no tipo de utilizador
+         */
         public async Task<IActionResult> Index(string tab = "available")
         {
             if (!User.Identity.IsAuthenticated)
@@ -24,6 +39,7 @@ namespace LibraryManagementSystem.Controllers
                 return RedirectToPage("/Identity/Account/Login");
             }
 
+            /* Redirecionar bibliotecários para interface administrativa */
             if (User.IsInRole("Bibliotecário"))
             {
                 return RedirectToAction("Index", "Admin");
@@ -38,19 +54,18 @@ namespace LibraryManagementSystem.Controllers
                 return RedirectToAction("AccessDenied", "Account");
             }
 
-            // FIXED: Load borrowings with ALL book reviews (not just from current member)
+            /* Carregar empréstimos com todas as avaliações de livros - relacionamentos muitos-para-um */
             var borrowings = await _context.Borrowings
                 .Include(b => b.Book)
-                    .ThenInclude(book => book.Categories)
+                    .ThenInclude(book => book.Categories) // Relacionamento muitos-para-muitos
                 .Include(b => b.Book)
-                    .ThenInclude(book => book.BookReviews) // This loads ALL reviews for each book
-                        .ThenInclude(br => br.Member) // Include member info for each review
+                    .ThenInclude(book => book.BookReviews) // Relacionamento muitos-para-um
+                        .ThenInclude(br => br.Member)
                 .Include(b => b.Member)
-                .Where(b => b.MemberId == member.MemberId) // Only current member's borrowings
+                .Where(b => b.MemberId == member.MemberId)
                 .OrderByDescending(b => b.BorrowDate)
                 .ToListAsync();
 
-            // Assign the loaded borrowings to the member
             member.Borrowings = borrowings;
 
             var viewModel = new MemberDashboardViewModel
@@ -63,6 +78,12 @@ namespace LibraryManagementSystem.Controllers
             return View(viewModel);
         }
 
+        /**
+         * Carrega conteúdo de abas via AJAX para interface dinâmica
+         * 
+         * @param tab Nome da aba a carregar (borrowed, overdue, history)
+         * @return Vista parcial com dados filtrados ou erro JSON
+         */
         [HttpGet]
         public async Task<IActionResult> GetTabContent(string tab)
         {
@@ -72,24 +93,23 @@ namespace LibraryManagementSystem.Controllers
                 return Json(new { success = false, message = "Utilizador não encontrado" });
             }
 
-            // Step 1: Get member
             var member = await _context.Members.FirstOrDefaultAsync(m => m.UserId == currentUser.Id);
             if (member == null)
             {
                 return Json(new { success = false, message = "Membro não encontrado" });
             }
 
-            // Step 2: Get filtered borrowings with complete book data
+            /* Consulta base com relacionamentos necessários */
             var borrowingsQuery = _context.Borrowings
                 .Include(b => b.Book)
                     .ThenInclude(book => book.Categories)
                 .Include(b => b.Book)
-                    .ThenInclude(book => book.BookReviews) // Include ALL reviews
+                    .ThenInclude(book => book.BookReviews)
                         .ThenInclude(br => br.Member)
                 .Include(b => b.Member)
                 .Where(b => b.MemberId == member.MemberId);
 
-            // Apply tab-specific filtering
+            /* Aplicar filtros específicos por aba */
             switch (tab)
             {
                 case "history":
@@ -107,7 +127,6 @@ namespace LibraryManagementSystem.Controllers
                 .OrderByDescending(b => b.BorrowDate)
                 .ToListAsync();
 
-            // Assign filtered borrowings to member
             member.Borrowings = borrowings;
 
             var viewModel = new MemberDashboardViewModel
@@ -116,6 +135,7 @@ namespace LibraryManagementSystem.Controllers
                 CurrentTab = tab
             };
 
+            /* Retornar vista parcial apropriada */
             switch (tab)
             {
                 case "borrowed":
@@ -128,18 +148,25 @@ namespace LibraryManagementSystem.Controllers
                     return PartialView("_BorrowedTab", viewModel);
             }
         }
-        
 
+        /**
+         * Catálogo público de livros com pesquisa
+         * 
+         * @param search Termo de pesquisa para título, autor ou categoria
+         * @return Vista do catálogo com livros filtrados
+         */
         [Authorize(Roles = "Membro")]
         public async Task<IActionResult> Catalog(string search)
         {
+            /* Consulta base com relacionamentos para estatísticas */
             var booksQuery = _context.Books
                 .Include(b => b.Categories)
-                .Include(b => b.BookReviews) // Add this line
-                    .ThenInclude(br => br.Member) // Add this line
-                .Include(b => b.Borrowings) // Add this line
+                .Include(b => b.BookReviews)
+                    .ThenInclude(br => br.Member)
+                .Include(b => b.Borrowings)
                 .Where(b => b.Available);
 
+            /* Aplicar filtro de pesquisa se fornecido */
             if (!string.IsNullOrEmpty(search))
             {
                 booksQuery = booksQuery.Where(b =>
@@ -150,6 +177,7 @@ namespace LibraryManagementSystem.Controllers
 
             var books = await booksQuery.ToListAsync();
 
+            /* Criar ViewModels com estatísticas calculadas */
             var bookViewModels = books.Select(b => new BookViewModel
             {
                 Book = b,
@@ -162,7 +190,10 @@ namespace LibraryManagementSystem.Controllers
             return View(bookViewModels);
         }
 
-
+        /**
+         * Histórico completo de empréstimos do membro
+         * @return Vista com histórico ordenado por data de empréstimo
+         */
         [Authorize(Roles = "Membro")]
         public async Task<IActionResult> MyHistory()
         {
@@ -174,6 +205,7 @@ namespace LibraryManagementSystem.Controllers
                 return RedirectToAction("Index");
             }
 
+            /* Carregar histórico completo com relacionamentos */
             var history = await _context.Borrowings
                 .Include(b => b.Book)
                     .ThenInclude(book => book.Categories)
@@ -184,11 +216,19 @@ namespace LibraryManagementSystem.Controllers
             return View(history);
         }
 
+        /**
+         * Página sobre o sistema
+         * @return Vista estática com informações do sistema
+         */
         public IActionResult About()
         {
             return View();
         }
 
+        /**
+         * Carrega livros disponíveis para o dashboard
+         * @return Lista de ViewModels com livros disponíveis e estatísticas
+         */
         private async Task<List<BookViewModel>> GetAvailableBooks()
         {
             var books = await _context.Books
@@ -207,6 +247,12 @@ namespace LibraryManagementSystem.Controllers
             }).ToList();
         }
 
+        /**
+         * Carrega livros atualmente emprestados pelo membro
+         * 
+         * @param memberId ID do membro
+         * @return Lista de ViewModels com livros emprestados
+         */
         private async Task<List<BookViewModel>> GetBorrowedBooks(Guid? memberId)
         {
             if (!memberId.HasValue) return new List<BookViewModel>();
@@ -230,6 +276,12 @@ namespace LibraryManagementSystem.Controllers
             }).ToList();
         }
 
+        /**
+         * Carrega livros em atraso do membro
+         * 
+         * @param memberId ID do membro
+         * @return Lista de ViewModels com livros em atraso
+         */
         private async Task<List<BookViewModel>> GetOverdueBooks(Guid? memberId)
         {
             if (!memberId.HasValue) return new List<BookViewModel>();
@@ -255,6 +307,14 @@ namespace LibraryManagementSystem.Controllers
             }).ToList();
         }
 
+        /**
+         * Processa avaliação de livro via AJAX
+         * 
+         * @param bookId ID do livro a avaliar
+         * @param isLike Se gosta (true) ou não gosta (false)
+         * @param comment Comentário opcional
+         * @return Resposta JSON com resultado e estatísticas atualizadas
+         */
         [HttpPost]
         [Authorize]
         public async Task<IActionResult> RateBook(Guid bookId, bool isLike, string comment = "")
@@ -267,6 +327,7 @@ namespace LibraryManagementSystem.Controllers
                 return Json(new { success = false, message = "Membro não encontrado." });
             }
 
+            /* Validar se membro já emprestou o livro */
             var hasBorrowedBook = await _context.Borrowings
                 .AnyAsync(b => b.MemberId == member.MemberId && b.BookId == bookId);
 
@@ -279,6 +340,7 @@ namespace LibraryManagementSystem.Controllers
                 });
             }
 
+            /* Verificar se já existe avaliação - atualizar ou criar nova */
             var existingReview = await _context.BookReviews
                 .FirstOrDefaultAsync(br => br.BookId == bookId && br.MemberId == member.MemberId);
 
@@ -303,6 +365,7 @@ namespace LibraryManagementSystem.Controllers
 
             await _context.SaveChangesAsync();
 
+            /* Calcular estatísticas atualizadas */
             var likesCount = await _context.BookReviews.CountAsync(r => r.BookId == bookId && r.IsLike);
             var dislikesCount = await _context.BookReviews.CountAsync(r => r.BookId == bookId && !r.IsLike);
 
@@ -315,11 +378,19 @@ namespace LibraryManagementSystem.Controllers
             });
         }
 
+        /**
+         * Página de privacidade
+         * @return Vista estática com política de privacidade
+         */
         public IActionResult Privacy()
         {
             return View();
         }
 
+        /**
+         * Página de erro personalizada
+         * @return Vista de erro sem cache
+         */
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
