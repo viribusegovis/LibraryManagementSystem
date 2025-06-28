@@ -91,6 +91,6 @@ app.MapGet("/", async context =>
 });
 
 app.MapRazorPages();
-app.MapHub<LibraryHub>("/libraryHub");
+app.MapHub<BookReviewHub>("/bookReviewHub");
 
 app.Run();

@@ -30,15 +30,28 @@ namespace LibraryManagementSystem.Controllers
             }
 
             var currentUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == User.Identity.Name);
-            var member = await _context.Members
-                .Include(m => m.Borrowings)
-                    .ThenInclude(b => b.Book)
-                        .ThenInclude(b => b.Categories)
-                .Include(m => m.Borrowings)
-                    .ThenInclude(b => b.Book)
-                        .ThenInclude(b => b.BookReviews)
-                            .ThenInclude(br => br.Member)
-                .FirstOrDefaultAsync(m => m.UserId == currentUser.Id);
+            var member = await _context.Members.FirstOrDefaultAsync(m => m.UserId == currentUser.Id);
+
+            if (member == null)
+            {
+                TempData["ErrorMessage"] = "Perfil de membro não encontrado.";
+                return RedirectToAction("AccessDenied", "Account");
+            }
+
+            // FIXED: Load borrowings with ALL book reviews (not just from current member)
+            var borrowings = await _context.Borrowings
+                .Include(b => b.Book)
+                    .ThenInclude(book => book.Categories)
+                .Include(b => b.Book)
+                    .ThenInclude(book => book.BookReviews) // This loads ALL reviews for each book
+                        .ThenInclude(br => br.Member) // Include member info for each review
+                .Include(b => b.Member)
+                .Where(b => b.MemberId == member.MemberId) // Only current member's borrowings
+                .OrderByDescending(b => b.BorrowDate)
+                .ToListAsync();
+
+            // Assign the loaded borrowings to the member
+            member.Borrowings = borrowings;
 
             var viewModel = new MemberDashboardViewModel
             {
@@ -59,20 +72,43 @@ namespace LibraryManagementSystem.Controllers
                 return Json(new { success = false, message = "Utilizador não encontrado" });
             }
 
-            var member = await _context.Members
-                .Include(m => m.Borrowings.Where(b =>
-                    tab == "history" ? b.Status == "Devolvido" : // FIXED: Only delivered books for history
-                    tab == "borrowed" ? b.Status == "Emprestado" :
-                    tab == "overdue" ? b.Status == "Emprestado" && b.DueDate < DateTime.Now :
-                    true))
-                    .ThenInclude(b => b.Book)
-                        .ThenInclude(b => b.Categories)
-                .FirstOrDefaultAsync(m => m.UserId == currentUser.Id);
-
+            // Step 1: Get member
+            var member = await _context.Members.FirstOrDefaultAsync(m => m.UserId == currentUser.Id);
             if (member == null)
             {
                 return Json(new { success = false, message = "Membro não encontrado" });
             }
+
+            // Step 2: Get filtered borrowings with complete book data
+            var borrowingsQuery = _context.Borrowings
+                .Include(b => b.Book)
+                    .ThenInclude(book => book.Categories)
+                .Include(b => b.Book)
+                    .ThenInclude(book => book.BookReviews) // Include ALL reviews
+                        .ThenInclude(br => br.Member)
+                .Include(b => b.Member)
+                .Where(b => b.MemberId == member.MemberId);
+
+            // Apply tab-specific filtering
+            switch (tab)
+            {
+                case "history":
+                    borrowingsQuery = borrowingsQuery.Where(b => b.Status == "Devolvido");
+                    break;
+                case "borrowed":
+                    borrowingsQuery = borrowingsQuery.Where(b => b.Status == "Emprestado");
+                    break;
+                case "overdue":
+                    borrowingsQuery = borrowingsQuery.Where(b => b.Status == "Emprestado" && b.DueDate < DateTime.Now);
+                    break;
+            }
+
+            var borrowings = await borrowingsQuery
+                .OrderByDescending(b => b.BorrowDate)
+                .ToListAsync();
+
+            // Assign filtered borrowings to member
+            member.Borrowings = borrowings;
 
             var viewModel = new MemberDashboardViewModel
             {
@@ -87,30 +123,29 @@ namespace LibraryManagementSystem.Controllers
                 case "overdue":
                     return PartialView("_OverdueTab", viewModel);
                 case "history":
-                    // FIXED: History tab shows only delivered books
                     return PartialView("_HistoryTab", viewModel);
                 default:
                     return PartialView("_BorrowedTab", viewModel);
             }
         }
+        
 
         [Authorize(Roles = "Membro")]
-        public async Task<IActionResult> Catalog(string search = "")
+        public async Task<IActionResult> Catalog(string search)
         {
             var booksQuery = _context.Books
-                .Include(b => b.Categories) // FIXED: Use Categories collection
-                .Include(b => b.BookReviews)
-                    .ThenInclude(br => br.Member)
+                .Include(b => b.Categories)
+                .Include(b => b.BookReviews) // Add this line
+                    .ThenInclude(br => br.Member) // Add this line
+                .Include(b => b.Borrowings) // Add this line
                 .Where(b => b.Available);
 
             if (!string.IsNullOrEmpty(search))
             {
-                // FIXED: Search in Categories collection
                 booksQuery = booksQuery.Where(b =>
                     b.Title.Contains(search) ||
                     b.Author.Contains(search) ||
                     b.Categories.Any(c => c.Name.Contains(search)));
-                ViewData["CurrentFilter"] = search;
             }
 
             var books = await booksQuery.ToListAsync();
@@ -118,13 +153,15 @@ namespace LibraryManagementSystem.Controllers
             var bookViewModels = books.Select(b => new BookViewModel
             {
                 Book = b,
-                LikesCount = b.BookReviews.Count(r => r.IsLike),
-                DislikesCount = b.BookReviews.Count(r => !r.IsLike),
-                Comments = b.BookReviews.Where(r => !string.IsNullOrEmpty(r.Comment)).ToList()
+                LikesCount = b.BookReviews?.Count(r => r.IsLike) ?? 0,
+                DislikesCount = b.BookReviews?.Count(r => !r.IsLike) ?? 0,
+                Comments = b.BookReviews?.Where(r => !string.IsNullOrEmpty(r.Comment)).ToList() ?? new List<BookReview>()
             }).ToList();
 
+            ViewData["CurrentFilter"] = search;
             return View(bookViewModels);
         }
+
 
         [Authorize(Roles = "Membro")]
         public async Task<IActionResult> MyHistory()

@@ -1,4 +1,4 @@
-﻿// Controllers/BooksController.cs - Complete with Delete and ToggleAvailability actions
+﻿// Controllers/BooksController.cs - Complete with member view and admin functionality
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using LibraryManagementSystem.Data;
@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace LibraryManagementSystem.Controllers
 {
-    [Authorize(Roles = "Bibliotecário")]
     public class BooksController : Controller
     {
         private readonly LibraryContext _context;
@@ -18,7 +17,8 @@ namespace LibraryManagementSystem.Controllers
             _context = context;
         }
 
-        // GET: Books
+        // GET: Books - Admin Index (Librarians only)
+        [Authorize(Roles = "Bibliotecário")]
         public async Task<IActionResult> Index(string searchString, Guid? categoryId, string availability, string sortOrder)
         {
             ViewData["CurrentFilter"] = searchString;
@@ -51,15 +51,12 @@ namespace LibraryManagementSystem.Controllers
                 switch (availability.ToLower())
                 {
                     case "available":
-                        // Available: Available = true AND no active borrowings
                         books = books.Where(b => b.Available && !b.Borrowings.Any(br => br.Status == "Emprestado"));
                         break;
                     case "borrowed":
-                        // Borrowed: Has active borrowings
                         books = books.Where(b => b.Borrowings.Any(br => br.Status == "Emprestado"));
                         break;
                     case "unavailable":
-                        // Unavailable: Available = false AND no active borrowings
                         books = books.Where(b => !b.Available && !b.Borrowings.Any(br => br.Status == "Emprestado"));
                         break;
                 }
@@ -89,7 +86,8 @@ namespace LibraryManagementSystem.Controllers
             return View(await books.ToListAsync());
         }
 
-        // GET: Books/Details/5
+        // GET: Books/Details/5 - Admin Details (Librarians only)
+        [Authorize(Roles = "Bibliotecário")]
         public async Task<IActionResult> Details(Guid? id)
         {
             if (id == null)
@@ -109,7 +107,60 @@ namespace LibraryManagementSystem.Controllers
             return View(book);
         }
 
+        // GET: Books/View/5 - Member View (Public access)
+        // In BooksController.cs - Update View action
+        [AllowAnonymous]
+        public async Task<IActionResult> View(Guid? id)
+        {
+            if (id == null)
+                return NotFound();
+
+            var book = await _context.Books
+                .Include(b => b.Categories)
+                .Include(b => b.Borrowings)
+                    .ThenInclude(br => br.Member)
+                .Include(b => b.BookReviews)
+                    .ThenInclude(br => br.Member)
+                .FirstOrDefaultAsync(m => m.BookId == id);
+
+            if (book == null)
+                return NotFound();
+
+            // Check borrowing and review status for authenticated members
+            if (User.Identity.IsAuthenticated && User.IsInRole("Membro"))
+            {
+                var currentUser = await _context.Users.FirstOrDefaultAsync(u => u.UserName == User.Identity.Name);
+                var member = await _context.Members.FirstOrDefaultAsync(m => m.UserId == currentUser.Id);
+
+                if (member != null)
+                {
+                    ViewBag.CurrentMemberId = member.MemberId.ToString(); // Add this line
+                    ViewBag.HasBorrowedBook = await _context.Borrowings
+                        .AnyAsync(b => b.BookId == id && b.MemberId == member.MemberId);
+
+                    ViewBag.HasReviewed = await _context.BookReviews
+                        .AnyAsync(r => r.BookId == id && r.MemberId == member.MemberId);
+                }
+                else
+                {
+                    ViewBag.CurrentMemberId = "";
+                    ViewBag.HasBorrowedBook = false;
+                    ViewBag.HasReviewed = false;
+                }
+            }
+            else
+            {
+                ViewBag.CurrentMemberId = "";
+                ViewBag.HasBorrowedBook = false;
+                ViewBag.HasReviewed = false;
+            }
+
+            return View("MemberDetails", book);
+        }
+
+
         // GET: Books/Create
+        [Authorize(Roles = "Bibliotecário")]
         public async Task<IActionResult> Create()
         {
             ViewBag.Categories = new MultiSelectList(await _context.Categories.ToListAsync(), "CategoryId", "Name");
@@ -119,6 +170,7 @@ namespace LibraryManagementSystem.Controllers
         // POST: Books/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Bibliotecário")]
         public async Task<IActionResult> Create([Bind("Title,Author,ISBN,YearPublished,Available")] Book book, Guid[] selectedCategories)
         {
             if (ModelState.IsValid)
@@ -154,6 +206,7 @@ namespace LibraryManagementSystem.Controllers
         }
 
         // GET: Books/Edit/5
+        [Authorize(Roles = "Bibliotecário")]
         public async Task<IActionResult> Edit(Guid? id)
         {
             if (id == null)
@@ -186,6 +239,7 @@ namespace LibraryManagementSystem.Controllers
         // POST: Books/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Bibliotecário")]
         public async Task<IActionResult> Edit(Guid id, [Bind("BookId,Title,Author,ISBN,YearPublished,Available,CreatedDate")] Book book, Guid[] selectedCategories)
         {
             if (id != book.BookId)
@@ -254,6 +308,7 @@ namespace LibraryManagementSystem.Controllers
         }
 
         // GET: Books/Delete/5
+        [Authorize(Roles = "Bibliotecário")]
         public async Task<IActionResult> Delete(Guid? id)
         {
             if (id == null)
@@ -276,6 +331,7 @@ namespace LibraryManagementSystem.Controllers
         // POST: Books/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Bibliotecário")]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
             var book = await _context.Books
@@ -319,6 +375,7 @@ namespace LibraryManagementSystem.Controllers
         }
 
         // GET: Books/BorrowingHistory/5
+        [Authorize(Roles = "Bibliotecário")]
         public async Task<IActionResult> BorrowingHistory(Guid? id)
         {
             if (id == null)
@@ -336,15 +393,12 @@ namespace LibraryManagementSystem.Controllers
             return View(book);
         }
 
-        // POST: Books/ToggleAvailability (Form-based for Delete page)
         // POST: Books/ToggleAvailability
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Bibliotecário")]
         public async Task<IActionResult> ToggleAvailability(Guid id)
         {
-            // Add debug logging
-            Console.WriteLine($"ToggleAvailability called with id: {id}");
-
             if (id == Guid.Empty)
             {
                 TempData["ErrorMessage"] = "ID do livro inválido.";
@@ -377,12 +431,6 @@ namespace LibraryManagementSystem.Controllers
             TempData["SuccessMessage"] = $"Livro '{book.Title}' marcado como {statusMessage} com sucesso!";
 
             return RedirectToAction(nameof(Index));
-        }
-
-
-        public class ToggleRequest
-        {
-            public Guid Id { get; set; }
         }
 
         private bool BookExists(Guid id)
