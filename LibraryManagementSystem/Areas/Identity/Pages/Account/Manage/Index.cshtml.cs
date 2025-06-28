@@ -134,7 +134,7 @@ namespace LibraryManagementSystem.Areas.Identity.Pages.Account.Manage
                 member.Phone = Input.PhoneNumber; // Can be null/empty
                 member.Address = Input.Address;
                 member.DateOfBirth = Input.DateOfBirth;
-                member.Email = Input.Email.IsNullOrEmpty()? user.Email : Input.Email;
+                member.Email = String.IsNullOrEmpty(Input.Email) ? user.Email : Input.Email;
 
                 await _context.SaveChangesAsync();
             }
