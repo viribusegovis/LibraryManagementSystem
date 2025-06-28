@@ -1,0 +1,536 @@
+﻿@* Views/Books/MemberDetails.cshtml - Member view with borrowing validation *@
+@model LibraryManagementSystem.Models.Book
+@{
+    ViewData["Title"] = Model.Title;
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+    <style>
+        .book-cover {
+            min-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 15px;
+            color: white;
+            font-size: 4rem;
+        }
+
+        .rating-section {
+            border-top: 2px solid #dee2e6;
+            padding-top: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .review-card {
+            border-left: 4px solid #17a2b8;
+            background: #f8f9fa;
+            margin-bottom: 1rem;
+        }
+
+        .review-like {
+            border-left-color: #28a745;
+        }
+
+        .review-dislike {
+            border-left-color: #dc3545;
+        }
+    </style>
+}
+
+<div class="container mt-4">
+    <!-- Book Header -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="bg-primary book-cover ">
+                <i class="fas fa-book"></i>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                    <h1 class="display-6 mb-2">@Model.Title</h1>
+                    <h4 class="text-muted mb-3">por @Model.Author</h4>
+                </div>
+                <div class="text-end">
+                    <a href="@Url.Action("Index", "Home")" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Voltar
+                    </a>
+                </div>
+            </div>
+
+            <!-- Book Information -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h6 class="card-title">
+                                <i class="fas fa-info-circle me-2"></i>Informações do Livro
+                            </h6>
+                            <div class="row">
+                                <div class="col-12 mb-2">
+                                    <strong>ISBN:</strong>
+                                    @if (!string.IsNullOrEmpty(Model.ISBN))
+                                    {
+                                        <span class="badge bg-secondary">@Model.ISBN</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Não informado</span>
+                                    }
+                                </div>
+                                <div class="col-12 mb-2">
+                                    <strong>Ano de Publicação:</strong>
+                                    <span class="text-gray-800">@(Model.YearPublished?.ToString() ?? "Não informado")</span>
+                                </div>
+                                <div class="col-12 mb-2">
+                                    <strong>Categorias:</strong>
+                                    @if (Model.Categories != null && Model.Categories.Any())
+                                    {
+                                        <div>
+                                            @foreach (var category in Model.Categories)
+                                            {
+                                                <span class="badge bg-info me-1">@category.Name</span>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Sem categorias</span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h6 class="card-title">
+                                <i class="fas fa-chart-bar me-2"></i>Estado e Estatísticas
+                            </h6>
+                            @{
+                                var activeBorrowing = Model.Borrowings?.FirstOrDefault(b => b.Status == "Emprestado");
+                                var totalReviews = Model.BookReviews?.Count() ?? 0;
+                                var likes = Model.BookReviews?.Count(r => r.IsLike) ?? 0;
+                                var dislikes = Model.BookReviews?.Count(r => !r.IsLike) ?? 0;
+                                var averageRating = Model.BookReviews?.Where(r => r.Rating.HasValue).Average(r => r.Rating) ?? 0;
+                            }
+
+                            <div class="mb-3">
+                                <strong>Estado:</strong>
+                                @if (activeBorrowing != null)
+                                {
+                                    <span class="badge bg-warning">
+                                        <i class="fas fa-clock me-1"></i>Emprestado
+                                    </span>
+                                }
+                                else if (Model.Available)
+                                {
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check me-1"></i>Disponível
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">
+                                        <i class="fas fa-ban me-1"></i>Indisponível
+                                    </span>
+                                }
+                            </div>
+
+                            <div class="row text-center">
+                                <div class="col-3">
+                                    <div class="h4 text-success mb-0 likes-count">@likes</div>
+                                    <small class="text-muted">Gostos</small>
+                                </div>
+                                <div class="col-3">
+                                    <div class="h4 text-danger mb-0 dislikes-count">@dislikes</div>
+                                    <small class="text-muted">Não Gostos</small>
+                                </div>
+                                <div class="col-3">
+                                    <div class="h4 text-info mb-0 total-reviews-count">@totalReviews</div>
+                                    <small class="text-muted">Avaliações</small>
+                                </div>
+                                <div class="col-3">
+                                    <div class="h4 text-warning mb-0 average-rating">@Math.Round(averageRating, 1)</div>
+                                    <small class="text-muted">⭐ Média</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reviews Section -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-comments me-2"></i>Avaliações e Comentários
+                    </h5>
+                    @if (User.Identity.IsAuthenticated && User.IsInRole("Membro"))
+                    {
+                        
+                            // Check if current member has borrowed this book
+                            var hasBorrowedBook = ViewBag.HasBorrowedBook as bool? ?? false;
+                            var hasReviewed = ViewBag.HasReviewed as bool? ?? false;
+                        
+                        
+                        @if (hasBorrowedBook && !hasReviewed)
+                        {
+                            <button class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#addReviewForm">
+                                <i class="fas fa-plus me-1"></i>Adicionar Avaliação
+                            </button>
+                        }
+                        else if (!hasBorrowedBook)
+                        {
+                            <span class="badge bg-warning">
+                                <i class="fas fa-info-circle me-1"></i>Só pode avaliar livros que já emprestou
+                            </span>
+                        }
+                        else if (hasReviewed)
+                        {
+                            <span class="badge bg-success">
+                                <i class="fas fa-check-circle me-1"></i>Já avaliou este livro
+                            </span>
+                        }
+                    }
+                    else if (!User.Identity.IsAuthenticated)
+                    {
+                        <a href="@Url.Action("Login", "Account")" class="btn btn-primary">
+                            <i class="fas fa-sign-in-alt me-1"></i>Entrar para Avaliar
+                        </a>
+                    }
+                </div>
+                <div class="card-body">
+                    @if (User.Identity.IsAuthenticated && User.IsInRole("Membro") && ViewBag.HasBorrowedBook == true && ViewBag.HasReviewed != true)
+                    {
+                        <!-- Add Review Form -->
+                        <div class="collapse mb-4" id="addReviewForm">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-star me-2"></i>Deixe a sua avaliação
+                                    </h6>
+                                    <form asp-controller="BookReviews" asp-action="Create" method="post">
+                                        <input type="hidden" name="BookId" value="@Model.BookId" />
+
+                                        <!-- Rating Section -->
+                                        <div class="mb-3">
+                                            <label class="form-label">Classificação (1-5 estrelas):</label>
+                                            <div class="rating-stars">
+                                                <input type="radio" name="Rating" value="1" id="star1" required>
+                                                <label for="star1" class="star">⭐</label>
+                                                <input type="radio" name="Rating" value="2" id="star2">
+                                                <label for="star2" class="star">⭐</label>
+                                                <input type="radio" name="Rating" value="3" id="star3">
+                                                <label for="star3" class="star">⭐</label>
+                                                <input type="radio" name="Rating" value="4" id="star4">
+                                                <label for="star4" class="star">⭐</label>
+                                                <input type="radio" name="Rating" value="5" id="star5">
+                                                <label for="star5" class="star">⭐</label>
+                                            </div>
+                                        </div>
+
+                                        <!-- Like/Dislike Section -->
+                                        <div class="mb-3">
+                                            <label class="form-label">A sua opinião:</label>
+                                            <div class="btn-group w-100" role="group">
+                                                <input type="radio" class="btn-check" name="IsLike" value="true" id="like" required>
+                                                <label class="btn btn-outline-success" for="like">
+                                                    <i class="fas fa-thumbs-up me-1"></i>Gosto
+                                                </label>
+
+                                                <input type="radio" class="btn-check" name="IsLike" value="false" id="dislike" required>
+                                                <label class="btn btn-outline-danger" for="dislike">
+                                                    <i class="fas fa-thumbs-down me-1"></i>Não Gosto
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <!-- Comment Section -->
+                                        <div class="mb-3">
+                                            <label for="comment" class="form-label">Comentário (opcional):</label>
+                                            <textarea name="Comment" id="comment" class="form-control" rows="3"
+                                                      maxlength="1000" placeholder="Partilhe a sua opinião sobre este livro..."></textarea>
+                                            <small class="form-text text-muted">Máximo 1000 caracteres</small>
+                                        </div>
+
+                                        <div class="d-flex justify-content-end">
+                                            <button type="button" class="btn btn-secondary me-2" data-bs-toggle="collapse" data-bs-target="#addReviewForm">
+                                                Cancelar
+                                            </button>
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-paper-plane me-1"></i>Publicar Avaliação
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else if (User.Identity.IsAuthenticated && User.IsInRole("Membro") && ViewBag.HasBorrowedBook != true)
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Só pode avaliar livros que já emprestou.</strong><br>
+                            Empreste este livro primeiro para poder deixar uma avaliação.
+                        </div>
+                    }
+                    else if (User.Identity.IsAuthenticated && User.IsInRole("Membro") && ViewBag.HasReviewed == true)
+                    {
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle me-2"></i>
+                            <strong>Já avaliou este livro.</strong><br>
+                            A sua avaliação está visível abaixo.
+                        </div>
+                    }
+
+                    <!-- Reviews List -->
+                    @if (Model.BookReviews != null && Model.BookReviews.Any())
+                    {
+                        <div class="rating-section">
+                            @{
+                                // Get current user's review first
+                                var currentUserEmail = User.Identity.Name;
+                                var userReview = Model.BookReviews.FirstOrDefault(r =>
+                                r.Member != null && r.Member.Email == currentUserEmail);
+                                var otherReviews = Model.BookReviews.Where(r =>
+                                r.Member == null || r.Member.Email != currentUserEmail)
+                                .OrderByDescending(r => r.ReviewDate);
+                            }
+
+                            <!-- Current User's Review (if exists) -->
+                            @if (userReview != null)
+                            {
+                                <div class="card review-card @(userReview.IsLike ? "review-like" : "review-dislike") mb-3 border-primary"
+                                     id="review-@userReview.BookReviewId">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <div class="card-icon bg-primary me-3"
+                                                     style="width: 40px; height: 40px; font-size: 1rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white;">
+                                                    @userReview.Member.Name.Substring(0, 1).ToUpper()
+                                                </div>
+                                                <div>
+                                                    <h6 class="mb-0">@userReview.Member.Name (Você)</h6>
+                                                    <small class="text-muted">@userReview.ReviewDate.ToString("dd/MM/yyyy HH:mm")</small>
+                                                    @if (userReview.Rating.HasValue)
+                                                    {
+                                                        <div class="rating-display">
+                                                            @for (int i = 1; i <= 5; i++)
+                                                            {
+                                                                <span class="@(i <= userReview.Rating ? "text-warning" : "text-muted")">⭐</span>
+                                                            }
+                                                            <small class="ms-1">(@userReview.Rating/5)</small>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </div>
+                                            <div class="text-end">
+                                                <span class="badge @(userReview.IsLike ? "bg-success" : "bg-danger") me-2">
+                                                    <i class="fas fa-thumbs-@(userReview.IsLike ? "up" : "down") me-1"></i>
+                                                    @(userReview.IsLike ? "Gosto" : "Não Gosto")
+                                                </span>
+                                                <!-- Edit and Delete buttons for user's own review -->
+                                                <a asp-controller="BookReviews" asp-action="Edit" asp-route-id="@userReview.BookReviewId"
+                                                   class="btn btn-sm btn-outline-primary" title="Editar avaliação">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <form asp-controller="BookReviews" asp-action="Delete" method="post" class="d-inline ms-1">
+                                                    <input type="hidden" name="id" value="@userReview.BookReviewId" />
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                            onclick="return confirm('Tem certeza que deseja eliminar a sua avaliação?')"
+                                                            title="Eliminar avaliação">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(userReview.Comment))
+                                        {
+                                            <div class="mt-2">
+                                                <p class="mb-0">@userReview.Comment</p>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+
+                            <!-- Other Users' Reviews -->
+                            @foreach (var review in otherReviews)
+                            {
+                                <div class="card review-card @(review.IsLike ? "review-like" : "review-dislike") mb-3"
+                                     id="review-@review.BookReviewId">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <div class="card-icon @(review.IsLike ? "bg-success" : "bg-danger") me-3"
+                                                     style="width: 40px; height: 40px; font-size: 1rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white;">
+                                                    @review.Member.Name.Substring(0, 1).ToUpper()
+                                                </div>
+                                                <div>
+                                                    <h6 class="mb-0">@review.Member.Name</h6>
+                                                    <small class="text-muted">@review.ReviewDate.ToString("dd/MM/yyyy HH:mm")</small>
+                                                    @if (review.Rating.HasValue)
+                                                    {
+                                                        <div class="rating-display">
+                                                            @for (int i = 1; i <= 5; i++)
+                                                            {
+                                                                <span class="@(i <= review.Rating ? "text-warning" : "text-muted")">⭐</span>
+                                                            }
+                                                            <small class="ms-1">(@review.Rating/5)</small>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </div>
+                                            <div class="text-end">
+                                                <span class="badge @(review.IsLike ? "bg-success" : "bg-danger")">
+                                                    <i class="fas fa-thumbs-@(review.IsLike ? "up" : "down") me-1"></i>
+                                                    @(review.IsLike ? "Gosto" : "Não Gosto")
+                                                </span>
+                                            </div>
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(review.Comment))
+                                        {
+                                            <div class="mt-2">
+                                                <p class="mb-0">@review.Comment</p>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/signalr/dist/browser/signalr.js"></script>
+    <script>
+        // Your existing SignalR code from search result [2]
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize SignalR connection
+            const connection = new signalR.HubConnectionBuilder()
+                .withUrl("/bookReviewHub")
+                .build();
+
+            const bookId = '@Model.BookId';
+
+            // Start connection and join book group
+            connection.start().then(function () {
+                console.log('SignalR Connected');
+                return connection.invoke("JoinBookGroup", bookId);
+            }).catch(function (err) {
+                console.error('SignalR Connection Error: ', err.toString());
+            });
+
+            // Listen for book statistics updates
+            connection.on("UpdateBookStats", function (data) {
+                updateCounter('.likes-count', data.likes, 'text-success');
+                updateCounter('.dislikes-count', data.dislikes, 'text-danger');
+                updateCounter('.total-reviews-count', data.totalReviews, 'text-info');
+                updateCounter('.average-rating', data.averageRating, 'text-warning');
+            });
+
+            // Listen for new reviews
+            connection.on("NewReview", function (review) {
+                // Create new review HTML and insert
+                let ratingStars = '';
+                if (review.rating) {
+                    for (let i = 1; i <= 5; i++) {
+                        ratingStars += `<span class="${i <= review.rating ? 'text-warning' : 'text-muted'}">⭐</span>`;
+                    }
+                    ratingStars += `<small class="ms-1">(${review.rating}/5)</small>`;
+                }
+
+                const newReviewHtml = `
+                    <div class="card review-card ${review.isLike ? 'review-like' : 'review-dislike'} mb-3"
+                         id="review-${review.reviewId}" style="opacity: 0; transform: translateY(-20px);">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="card-icon ${review.isLike ? 'bg-success' : 'bg-danger'} me-3"
+                                         style="width: 40px; height: 40px; font-size: 1rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white;">
+                                        ${review.memberName.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0">${review.memberName}</h6>
+                                        <small class="text-muted">${review.reviewDate}</small>
+                                        ${review.rating ? `<div class="rating-display">${ratingStars}</div>` : ''}
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge ${review.isLike ? 'bg-success' : 'bg-danger'}">
+                                        <i class="fas fa-thumbs-${review.isLike ? 'up' : 'down'} me-1"></i>
+                                        ${review.isLike ? 'Gosto' : 'Não Gosto'}
+                                    </span>
+                                </div>
+                            </div>
+                            ${review.comment ? `<div class="mt-2"><p class="mb-0">${escapeHtml(review.comment)}</p></div>` : ''}
+                        </div>
+                    </div>
+                `;
+
+                const reviewsContainer = document.querySelector('.rating-section');
+                if (reviewsContainer) {
+                    reviewsContainer.insertAdjacentHTML('afterbegin', newReviewHtml);
+                    
+                    const newReviewElement = document.getElementById(`review-${review.reviewId}`);
+                    setTimeout(() => {
+                        newReviewElement.style.transition = 'all 0.3s ease';
+                        newReviewElement.style.opacity = '1';
+                        newReviewElement.style.transform = 'translateY(0)';
+                    }, 100);
+                }
+            });
+
+            // Helper functions
+            function updateCounter(selector, value, colorClass) {
+                const element = document.querySelector(selector);
+                if (element) {
+                    element.textContent = value;
+                    element.style.transform = 'scale(1.2)';
+                    setTimeout(() => element.style.transform = 'scale(1)', 200);
+                }
+            }
+
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            // Form validation
+            const reviewForm = document.querySelector('form[asp-action="Create"]');
+            if (reviewForm) {
+                reviewForm.addEventListener('submit', function(e) {
+                    const likeRadio = document.querySelector('input[name="IsLike"]:checked');
+                    const ratingRadio = document.querySelector('input[name="Rating"]:checked');
+
+                    if (!likeRadio) {
+                        e.preventDefault();
+                        alert('Por favor, selecione se gosta ou não gosta do livro.');
+                        return false;
+                    }
+
+                    if (!ratingRadio) {
+                        e.preventDefault();
+                        alert('Por favor, selecione uma classificação de 1 a 5 estrelas.');
+                        return false;
+                    }
+                });
+            }
+        });
+    </script>
+}

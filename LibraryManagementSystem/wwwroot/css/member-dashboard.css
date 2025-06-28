@@ -1,0 +1,315 @@
+﻿
+/* Reset and prevent horizontal scroll */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Clean background matching admin theme */
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    min-height: 100vh;
+    background-color: #f8f9fa;
+    overflow-x: hidden;
+    max-width: 100%;
+}
+
+/* Custom width container for 85% width */
+.custom-width-container {
+    width: 85%;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.member-container {
+    padding: 20px 15px;
+    box-sizing: border-box;
+    overflow: visible;
+}
+
+/* Member cards matching dashboard style */
+.member-card {
+    transition: transform 0.2s ease-in-out;
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin: 0 0 20px 0;
+    background: white;
+    overflow: visible;
+    color: #333;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+    .member-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+    }
+
+/* Book cards for member view */
+.book-card {
+    transition: transform 0.2s ease-in-out;
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    background: white;
+    overflow: hidden;
+}
+
+    .book-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+
+/* Welcome header styling */
+.welcome-header {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+    border-radius: 15px;
+    margin-bottom: 2rem;
+}
+
+/* Member navigation tabs */
+.member-nav {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+}
+
+    .member-nav .nav-pills .nav-link {
+        border-radius: 10px;
+        margin: 0 5px;
+        color: #007bff;
+        font-weight: 500;
+    }
+
+        .member-nav .nav-pills .nav-link.active {
+            background: linear-gradient(45deg, #007bff, #0056b3);
+            color: white;
+        }
+
+/* Book interaction section */
+.book-interactions {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 15px;
+    margin-top: 15px;
+}
+
+/* Like/Dislike buttons following best practices from search results */
+.book-rating {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.rating-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 15px;
+    border: 1px solid #dee2e6;
+    border-radius: 20px;
+    background: white;
+    color: #6c757d;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+}
+
+    .rating-btn:hover {
+        text-decoration: none;
+        transform: translateY(-1px);
+    }
+
+    .rating-btn.liked {
+        background: #28a745;
+        color: white;
+        border-color: #28a745;
+    }
+
+    .rating-btn.disliked {
+        background: #dc3545;
+        color: white;
+        border-color: #dc3545;
+    }
+
+    .rating-btn:not(.liked):not(.disliked):hover {
+        background: #e9ecef;
+        color: #495057;
+    }
+
+/* Comments section */
+.comments-section {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.comment-item {
+    background: white;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+    border-left: 3px solid #007bff;
+}
+
+.comment-meta {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-bottom: 5px;
+}
+
+/* Status badges */
+.status-badge {
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.status-requested {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.status-borrowed {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.status-overdue {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .custom-width-container {
+        width: 95%;
+    }
+
+    .member-container {
+        padding: 10px 5px;
+    }
+
+    .book-rating {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .rating-btn {
+        justify-content: center;
+    }
+}
+.rating-display {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    background: rgba(0,0,0,0.05);
+    border-radius: 15px;
+    font-size: 0.9rem;
+}
+
+.evaluation-restricted {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 8px;
+    padding: 10px;
+    text-align: center;
+    margin: 10px 0;
+}
+
+.can-evaluate {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    border-radius: 8px;
+    padding: 10px;
+    margin: 10px 0;
+}
+
+.loading-spinner {
+    text-align: center;
+    padding: 50px;
+}
+
+.history-item {
+    background: #f8f9fa;
+    border-left: 4px solid #28a745;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+    .history-item:hover {
+        background: #e9ecef;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .history-item.overdue-return {
+        border-left-color: #dc3545;
+    }
+
+.history-stats {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.stat-card {
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 15px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+}
+
+.history-timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+    .history-timeline::before {
+        content: '';
+        position: absolute;
+        left: 15px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #dee2e6;
+    }
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -23px;
+        top: 15px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #28a745;
+        border: 3px solid white;
+        box-shadow: 0 0 0 3px #dee2e6;
+    }
+
+    .timeline-item.overdue::before {
+        background: #dc3545;
+    }

@@ -1,0 +1,121 @@
+﻿@* Views/Categories/Create.cshtml *@
+@model LibraryManagementSystem.Models.Category
+@{
+    ViewData["Title"] = "Criar Categoria";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+}
+
+<div class="container-fluid custom-width-container dashboard-container">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center dashboard-header">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-plus me-2"></i>Criar Nova Categoria
+                    </h1>
+                    <p class="mb-0">Adicionar uma nova categoria de livros</p>
+                </div>
+                <div class="text-end">
+                    <a asp-action="Index" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Voltar à Lista
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Form -->
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-tag me-2"></i>Informações da Categoria
+                    </h6>
+                </div>
+                <div class="card-body card-content">
+                    <form asp-action="Create" method="post" class="needs-validation" novalidate>
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <div class="row">
+                            <!-- Name -->
+                            <div class="col-12 mb-3">
+                                <label asp-for="Name" class="form-label">
+                                    <i class="fas fa-tag me-1"></i>Nome da Categoria <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="Name" class="form-control" placeholder="Digite o nome da categoria" />
+                                <span asp-validation-for="Name" class="text-danger"></span>
+                            </div>
+
+                            <!-- Description -->
+                            <div class="col-12 mb-4">
+                                <label asp-for="Description" class="form-label">
+                                    <i class="fas fa-align-left me-1"></i>Descrição
+                                </label>
+                                <textarea asp-for="Description" class="form-control" rows="4"
+                                          placeholder="Digite uma descrição para a categoria (opcional)"></textarea>
+                                <span asp-validation-for="Description" class="text-danger"></span>
+                                <small class="form-text text-muted">
+                                    Descreva brevemente o tipo de livros desta categoria
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <a asp-action="Index" class="btn btn-secondary">
+                                        <i class="fas fa-times me-1"></i>Cancelar
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-1"></i>Criar Categoria
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Panel -->
+        <div class="col-lg-4">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-info-circle me-2"></i>Informações
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <small>
+                            <i class="fas fa-lightbulb me-1"></i>
+                            <strong>Dicas:</strong><br>
+                            • O nome da categoria é obrigatório<br>
+                            • Use nomes descritivos e únicos<br>
+                            • A descrição ajuda a organizar melhor<br>
+                            • Categorias facilitam a pesquisa de livros
+                        </small>
+                    </div>
+
+                    <div class="text-center">
+                        <div class="card-icon bg-primary-gradient mx-auto mb-2">
+                            <i class="fas fa-tags"></i>
+                        </div>
+                        <h6>Nova Categoria</h6>
+                        <small class="text-muted">Organize melhor o seu catálogo</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

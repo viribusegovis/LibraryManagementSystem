@@ -1,8 +1,163 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@* Views/Home/Index.cshtml - Complete file with History tab *@
+@model LibraryManagementSystem.ViewModels.MemberDashboardViewModel
+@{
+    ViewData["Title"] = "Biblioteca - Minha Área";
+    Layout = "_Layout";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+@section Styles {
+    <link rel="stylesheet" href="~/css/member-dashboard.css" asp-append-version="true" />
+}
+
+<div class="container-fluid custom-width-container member-container">
+    <!-- Welcome Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="welcome-header text-center py-5">
+                <h1 class="display-5">
+                    <i class="fas fa-user-circle me-3"></i>Minha Biblioteca
+                </h1>
+                @if (Model.Member != null)
+                {
+                    <p class="lead">Bem-vindo, @Model.Member.Name!</p>
+                    <p class="mb-0">Cartão: @Model.Member.CardNumber | Membro desde @Model.Member.MembershipDate.ToString("dd/MM/yyyy")</p>
+                }
+                else
+                {
+                    <p class="lead">Bem-vindo ao sistema de biblioteca!</p>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Tabs Navigation with History -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="member-nav">
+                <div class="card-body">
+                    <ul class="nav nav-pills justify-content-center" id="memberTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link @(Model.CurrentTab == "borrowed" ? "active" : "")"
+                                    id="borrowed-tab" data-tab="borrowed" type="button">
+                                <i class="fas fa-book-reader me-2"></i>Meus Empréstimos
+                                @if (Model.Member?.Borrowings?.Count(b => b.Status == "Emprestado") > 0)
+                                {
+                                    <span class="badge bg-success ms-1">@Model.Member.Borrowings.Count(b => b.Status == "Emprestado")</span>
+                                }
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link @(Model.CurrentTab == "overdue" ? "active" : "")"
+                                    id="overdue-tab" data-tab="overdue" type="button">
+                                <i class="fas fa-exclamation-triangle me-2"></i>Em Atraso
+                                @{
+                                    var overdueCount = Model.Member?.Borrowings?.Count(b => b.Status == "Emprestado" && b.DueDate < DateTime.Now) ?? 0;
+                                }
+                                @if (overdueCount > 0)
+                                {
+                                    <span class="badge bg-danger ms-1">@overdueCount</span>
+                                }
+                            </button>
+                        </li>
+                        <!-- ADDED: History Tab -->
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link @(Model.CurrentTab == "history" ? "active" : "")"
+                                    id="history-tab" data-tab="history" type="button">
+                                <i class="fas fa-history me-2"></i>Histórico
+                                @{
+                                    var historyCount = Model.Member?.Borrowings?.Count(b => b.Status == "Devolvido") ?? 0;
+                                }
+                                @if (historyCount > 0)
+                                {
+                                    <span class="badge bg-info ms-1">@historyCount</span>
+                                }
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab Content Area -->
+    <div id="tabContent">
+        @await Html.PartialAsync("_TabContent", Model)
+    </div>
 </div>
+
+<!-- Comment Modal -->
+<div class="modal fade" id="commentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Adicionar Comentário</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="commentForm">
+                    <input type="hidden" id="commentBookId" />
+                    <div class="mb-3">
+                        <label for="commentText" class="form-label">Comentário:</label>
+                        <textarea id="commentText" class="form-control" rows="3"
+                                  placeholder="Partilhe a sua opinião sobre este livro..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Avaliação:</label>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-outline-success" onclick="setRating(true)">
+                                <i class="fas fa-thumbs-up"></i> Gosto
+                            </button>
+                            <button type="button" class="btn btn-outline-danger" onclick="setRating(false)">
+                                <i class="fas fa-thumbs-down"></i> Não Gosto
+                            </button>
+                        </div>
+                        <input type="hidden" id="commentRating" />
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="submitComment()">Enviar Comentário</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Tab click event handlers only
+        document.addEventListener('DOMContentLoaded', function() {
+            const tabButtons = document.querySelectorAll('#memberTabs button[data-tab]');
+            tabButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const tabName = this.getAttribute('data-tab');
+                    loadTabContent(tabName);
+                });
+            });
+
+            // Set default tab if none is active
+            const activeTab = document.querySelector('#memberTabs .nav-link.active');
+            if (!activeTab) {
+                loadTabContent('borrowed');
+                document.getElementById('borrowed-tab').classList.add('active');
+            }
+        });
+
+        // Simple tab loading without complex features
+        function loadTabContent(tabName) {
+            $('#tabContent').html('<div class="text-center"><i class="fas fa-spinner fa-spin"></i> A Carregar...</div>');
+
+            $('#memberTabs .nav-link').removeClass('active');
+            $(`#${tabName}-tab`).addClass('active');
+
+            $.get('@Url.Action("GetTabContent", "Home")', { tab: tabName })
+                .done(function(data) {
+                    $('#tabContent').html(data);
+                })
+                .fail(function() {
+                    $('#tabContent').html('<div class="alert alert-danger">Erro ao carregar conteúdo.</div>');
+                });
+        }
+    </script>
+}

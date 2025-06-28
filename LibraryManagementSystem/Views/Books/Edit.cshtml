@@ -1,0 +1,280 @@
+﻿@* Views/Books/Edit.cshtml - Complete edit page with Portuguese interface *@
+@model LibraryManagementSystem.Models.Book
+@{
+    ViewData["Title"] = "Editar Livro";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+}
+
+<div class="container-fluid custom-width-container dashboard-container">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center dashboard-header">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-edit me-2"></i>Editar Livro
+                    </h1>
+                    <p class="mb-0">Alterar as informações do livro da biblioteca</p>
+                </div>
+                <div class="text-end">
+                    <a asp-action="Index" class="btn btn-secondary me-2">
+                        <i class="fas fa-arrow-left me-1"></i>Voltar à Lista
+                    </a>
+                    <a asp-action="Details" asp-route-id="@Model.BookId" class="btn btn-info">
+                        <i class="fas fa-eye me-1"></i>Ver Detalhes
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Form -->
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-book me-2"></i>Informações do Livro
+                    </h6>
+                </div>
+                <div class="card-body card-content">
+                    @if (ViewBag.WarningMessage != null)
+                    {
+                        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                            <i class="fas fa-exclamation-triangle me-2"></i>@ViewBag.WarningMessage
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    <form asp-action="Edit" method="post" id="editBookForm" class="needs-validation" novalidate>
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <!-- Hidden fields -->
+                        <input type="hidden" asp-for="BookId" />
+                        <input type="hidden" asp-for="CreatedDate" />
+
+                        <div class="row">
+                            <!-- Title -->
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Title" class="form-label">
+                                    <i class="fas fa-book me-1"></i>Título <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="Title" class="form-control" placeholder="Digite o título do livro" />
+                                <span asp-validation-for="Title" class="text-danger"></span>
+                            </div>
+
+                            <!-- Author -->
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Author" class="form-label">
+                                    <i class="fas fa-user me-1"></i>Autor <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="Author" class="form-control" placeholder="Digite o nome do autor" />
+                                <span asp-validation-for="Author" class="text-danger"></span>
+                            </div>
+
+                            <!-- ISBN -->
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="ISBN" class="form-label">
+                                    <i class="fas fa-barcode me-1"></i>ISBN
+                                </label>
+                                <input asp-for="ISBN" class="form-control" placeholder="Digite o ISBN (opcional)" />
+                                <span asp-validation-for="ISBN" class="text-danger"></span>
+                                <small class="form-text text-muted">Formato: 978-0-123456-78-9</small>
+                            </div>
+
+                            <!-- Year Published -->
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="YearPublished" class="form-label">
+                                    <i class="fas fa-calendar me-1"></i>Ano de Publicação
+                                </label>
+                                <input asp-for="YearPublished" type="number" class="form-control"
+                                       min="1000" max="@DateTime.Now.Year" placeholder="Ex: 2023" />
+                                <span asp-validation-for="YearPublished" class="text-danger"></span>
+                            </div>
+
+                            <!-- Categories -->
+                            <div class="col-12 mb-3">
+                                <label class="form-label">
+                                    <i class="fas fa-tags me-1"></i>Categorias
+                                </label>
+                                <select name="selectedCategories" class="form-select" multiple size="4">
+                                    @foreach (var category in ViewBag.Categories as MultiSelectList)
+                                    {
+                                        <option value="@category.Value" selected="@category.Selected">
+                                            @category.Text
+                                        </option>
+                                    }
+                                </select>
+                                <small class="form-text text-muted">
+                                    Mantenha Ctrl pressionado para selecionar múltiplas categorias
+                                </small>
+                            </div>
+
+                            <!-- Availability -->
+                            <div class="col-12 mb-4">
+                                <div class="form-check">
+                                    <input asp-for="Available" class="form-check-input" type="checkbox" />
+                                    <label asp-for="Available" class="form-check-label">
+                                        <i class="fas fa-check-circle me-1"></i>Livro disponível para empréstimo
+                                    </label>
+                                </div>
+                                <small class="form-text text-muted">
+                                    Desmarque apenas se o livro estiver em manutenção ou temporariamente indisponível
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <a asp-action="Index" class="btn btn-secondary">
+                                            <i class="fas fa-times me-1"></i>Cancelar
+                                        </a>
+                                    </div>
+                                    <div>
+                                        <button type="submit" class="btn btn-primary me-2" id="saveButton">
+                                            <i class="fas fa-save me-1"></i>Guardar Alterações
+                                        </button>
+                                        <a asp-action="Delete" asp-route-id="@Model.BookId"
+                                           class="btn btn-outline-danger"
+                                           onclick="return confirm('Tem certeza que deseja eliminar este livro?\n\nEsta ação não pode ser desfeita.')">
+                                            <i class="fas fa-trash me-1"></i>Eliminar
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Panel -->
+        <div class="col-lg-4">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-info-circle me-2"></i>Informações do Sistema
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <div class="card-icon bg-primary-gradient mx-auto mb-2">
+                            <i class="fas fa-book"></i>
+                        </div>
+                        <h6>@Model.Title</h6>
+                        <small class="text-muted">Criado em @Model.CreatedDate.ToString("dd/MM/yyyy")</small>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <small>
+                            <i class="fas fa-lightbulb me-1"></i>
+                            <strong>Dicas:</strong><br>
+                            • Campos marcados com * são obrigatórios<br>
+                            • O ISBN deve ser único no sistema<br>
+                            • Pode selecionar múltiplas categorias<br>
+                            • Alterações são guardadas imediatamente
+                        </small>
+                    </div>
+
+                    <div class="mt-3">
+                        <h6>Ações Rápidas:</h6>
+                        <div class="d-grid gap-2">
+                            <a asp-action="Details" asp-route-id="@Model.BookId" class="btn btn-sm btn-outline-info">
+                                <i class="fas fa-eye me-1"></i>Ver Detalhes
+                            </a>
+                            @if (Model.Available)
+                            {
+                                <a asp-controller="Borrowings" asp-action="Create" asp-route-bookId="@Model.BookId"
+                                   class="btn btn-sm btn-outline-success">
+                                    <i class="fas fa-handshake me-1"></i>Emprestar
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('editBookForm');
+            const saveButton = document.getElementById('saveButton');
+
+            // Add loading state to save button
+            form.addEventListener('submit', function() {
+                saveButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>A Guardar...';
+                saveButton.disabled = true;
+            });
+
+            // ISBN validation
+            const isbnInput = document.querySelector('input[name="ISBN"]');
+            if (isbnInput) {
+                isbnInput.addEventListener('input', function() {
+                    const isbn = this.value.replace(/[^0-9X]/g, '');
+                    if (isbn && (isbn.length !== 10 && isbn.length !== 13)) {
+                        this.setCustomValidity('ISBN deve ter 10 ou 13 dígitos');
+                    } else {
+                        this.setCustomValidity('');
+                    }
+                });
+            }
+
+            // Year validation
+            const yearInput = document.querySelector('input[name="YearPublished"]');
+            if (yearInput) {
+                yearInput.addEventListener('input', function() {
+                    const year = parseInt(this.value);
+                    const currentYear = new Date().getFullYear();
+                    if (year && (year < 1000 || year > currentYear)) {
+                        this.setCustomValidity(`Ano deve estar entre 1000 e ${currentYear}`);
+                    } else {
+                        this.setCustomValidity('');
+                    }
+                });
+            }
+
+            // Category selection helper
+            const categorySelect = document.querySelector('select[name="selectedCategories"]');
+            if (categorySelect) {
+                categorySelect.addEventListener('change', function() {
+                    const selectedCount = this.selectedOptions.length;
+                    const helpText = this.nextElementSibling;
+                    if (selectedCount > 0) {
+                        helpText.textContent = `${selectedCount} categoria(s) selecionada(s)`;
+                        helpText.className = 'form-text text-success';
+                    } else {
+                        helpText.textContent = 'Mantenha Ctrl pressionado para selecionar múltiplas categorias';
+                        helpText.className = 'form-text text-muted';
+                    }
+                });
+            }
+
+            // Auto-save warning for long forms
+            let formChanged = false;
+            const inputs = form.querySelectorAll('input, select, textarea');
+            inputs.forEach(input => {
+                input.addEventListener('change', () => formChanged = true);
+            });
+
+            window.addEventListener('beforeunload', function(e) {
+                if (formChanged) {
+                    e.preventDefault();
+                    e.returnValue = 'Tem alterações não guardadas. Deseja sair mesmo assim?';
+                }
+            });
+
+            // Reset form changed flag on successful submit
+            form.addEventListener('submit', () => formChanged = false);
+        });
+    </script>
+}

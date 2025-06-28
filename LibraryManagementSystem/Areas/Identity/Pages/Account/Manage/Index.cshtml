@@ -1,0 +1,196 @@
+﻿@* Areas/Identity/Pages/Account/Manage/Index.cshtml - Phone number made optional *@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Perfil";
+    ViewData["ActivePage"] = ManageNavPages.Index;
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h3 class="mb-0">
+            <i class="fas fa-user me-2"></i>@ViewData["Title"]
+        </h3>
+        <p class="text-muted mb-0">Gerir as informações do seu perfil de membro</p>
+    </div>
+</div>
+
+<partial name="_StatusMessage" for="StatusMessage" />
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="book-interactions">
+            <h6 class="mb-3">
+                <i class="fas fa-user-edit me-2"></i>Informações do Perfil
+            </h6>
+            <form id="profile-form" method="post">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                <!-- Email (Read-only) -->
+                <div class="form-floating mb-3">
+                    <input asp-for="Input.Email" class="form-control" placeholder="Email" disabled />
+                    <label asp-for="Input.Email" class="form-label">
+                        <i class="fas fa-envelope me-1"></i>Email
+                    </label>
+                </div>
+
+                <!-- Full Name (Required) -->
+                <div class="form-floating mb-3">
+                    <input asp-for="Input.FullName" class="form-control" placeholder="Nome completo" />
+                    <label asp-for="Input.FullName" class="form-label">
+                        <i class="fas fa-id-card me-1"></i>Nome Completo <span class="text-danger">*</span>
+                    </label>
+                    <span asp-validation-for="Input.FullName" class="text-danger"></span>
+                </div>
+
+                <!-- Phone Number (Optional) -->
+                <div class="form-floating mb-3">
+                    <input asp-for="Input.PhoneNumber" class="form-control" placeholder="Número de telefone (opcional)" />
+                    <label asp-for="Input.PhoneNumber" class="form-label">
+                        <i class="fas fa-phone me-1"></i>Número de Telefone (opcional)
+                    </label>
+                    <span asp-validation-for="Input.PhoneNumber" class="text-danger"></span>
+                    <small class="form-text text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Campo opcional. Útil para notificações importantes.
+                    </small>
+                </div>
+
+                <!-- Address (Optional) -->
+                <div class="form-floating mb-3">
+                    <input asp-for="Input.Address" class="form-control" placeholder="Morada (opcional)" />
+                    <label asp-for="Input.Address" class="form-label">
+                        <i class="fas fa-map-marker-alt me-1"></i>Morada (opcional)
+                    </label>
+                    <span asp-validation-for="Input.Address" class="text-danger"></span>
+                </div>
+
+                <!-- Date of Birth (Optional) -->
+                <div class="form-floating mb-3">
+                    <input asp-for="Input.DateOfBirth" type="date" class="form-control" />
+                    <label asp-for="Input.DateOfBirth" class="form-label">
+                        <i class="fas fa-birthday-cake me-1"></i>Data de Nascimento (opcional)
+                    </label>
+                    <span asp-validation-for="Input.DateOfBirth" class="text-danger"></span>
+                </div>
+
+                <div class="d-grid">
+                    <button id="update-profile-button" type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-save me-2"></i>Guardar Alterações
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="book-interactions">
+            <h6 class="mb-3">
+                <i class="fas fa-info-circle me-2"></i>Informações da Conta
+            </h6>
+            <div class="text-center mb-3">
+                <i class="fas fa-user-circle fa-4x text-primary mb-2"></i>
+                <h6>@Model.Username</h6>
+                <span class="status-badge status-borrowed">Membro da Biblioteca</span>
+            </div>
+
+            <div class="can-evaluate">
+                <small>
+                    <i class="fas fa-check-circle me-1"></i>
+                    <strong>Conta Ativa:</strong><br>
+                    • Acesso completo ao catálogo<br>
+                    • Possibilidade de empréstimos<br>
+                    • Sistema de avaliações
+                </small>
+            </div>
+
+            <div class="evaluation-restricted">
+                <small>
+                    <i class="fas fa-lightbulb me-1"></i>
+                    <strong>Campos Obrigatórios:</strong><br>
+                    • Nome Completo <span class="text-danger">*</span><br>
+                    <strong>Campos Opcionais:</strong><br>
+                    • Telefone, Morada, Data de Nascimento
+                </small>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="book-interactions mt-3">
+            <h6 class="mb-3">
+                <i class="fas fa-cogs me-2"></i>Ações Rápidas
+            </h6>
+            <div class="d-grid gap-2">
+                <a asp-page="./ChangePassword" class="btn btn-outline-secondary">
+                    <i class="fas fa-key me-2"></i>Alterar Palavra-passe
+                </a>
+                <a asp-controller="Home" asp-action="Index" class="btn btn-outline-success">
+                    <i class="fas fa-home me-2"></i>Voltar ao Início
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Form validation enhancement
+            const form = document.getElementById('profile-form');
+            const submitBtn = document.getElementById('update-profile-button');
+
+            // Add loading state to submit button
+            form.addEventListener('submit', function() {
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>A Guardar...';
+                submitBtn.disabled = true;
+            });
+
+            // FIXED: Optional phone number validation (only validate if not empty)
+            const phoneInput = document.querySelector('input[name="Input.PhoneNumber"]');
+            if (phoneInput) {
+                phoneInput.addEventListener('input', function() {
+                    const phone = this.value.trim();
+                    // Only validate if phone number is provided
+                    if (phone) {
+                        const cleanPhone = phone.replace(/\D/g, '');
+                        if (cleanPhone.length < 9 || cleanPhone.length > 15) {
+                            this.setCustomValidity('Telefone deve ter entre 9 e 15 dígitos');
+                        } else {
+                            this.setCustomValidity('');
+                        }
+                    } else {
+                        // Clear validation if field is empty (optional)
+                        this.setCustomValidity('');
+                    }
+                });
+            }
+
+            // Date of birth validation (optional)
+            const dobInput = document.querySelector('input[name="Input.DateOfBirth"]');
+            if (dobInput) {
+                dobInput.addEventListener('change', function() {
+                    const dateValue = this.value;
+                    // Only validate if date is provided
+                    if (dateValue) {
+                        const selectedDate = new Date(dateValue);
+                        const today = new Date();
+                        const minAge = new Date();
+                        minAge.setFullYear(today.getFullYear() - 120);
+
+                        if (selectedDate > today) {
+                            this.setCustomValidity('Data de nascimento não pode ser no futuro');
+                        } else if (selectedDate < minAge) {
+                            this.setCustomValidity('Data de nascimento inválida');
+                        } else {
+                            this.setCustomValidity('');
+                        }
+                    } else {
+                        // Clear validation if field is empty (optional)
+                        this.setCustomValidity('');
+                    }
+                });
+            }
+        });
+    </script>
+}

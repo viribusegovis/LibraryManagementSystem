@@ -1,0 +1,51 @@
+﻿@* Areas/Identity/Pages/Account/Manage/_Layout.cshtml - Updated with member styling *@
+@{
+    if (ViewData.TryGetValue("ParentLayout", out var parentLayout) && parentLayout != null)
+    {
+        Layout = parentLayout.ToString();
+    }
+    else
+    {
+        Layout = "/Views/Shared/_Layout.cshtml";
+    }
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+}
+
+<div class="container-fluid custom-width-container member-container">
+    <!-- Welcome Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="welcome-header text-center py-4">
+                <h1 class="display-6 mb-0">
+                    <i class="fas fa-user-cog me-3"></i>Gerir Conta
+                </h1>
+                <p class="lead mb-0">Alterar as definições da sua conta</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="row">
+        <div class="col-md-3">
+            <div class="member-nav">
+                <div class="card-body">
+                    <partial name="_ManageNav" />
+                </div>
+            </div>
+        </div>
+        <div class="col-md-9">
+            <div class="member-card">
+                <div class="card-body">
+                    @RenderBody()
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @RenderSection("Scripts", required: false)
+}

@@ -1,30 +1,64 @@
-// Program.cs
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using LibraryManagementSystem.Data;
 using LibraryManagementSystem.Hubs;
 using LibraryManagementSystem.Data.Seed;
+using Microsoft.OpenApi.Models;
+using System.Text.Json;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// Add services to the container
 builder.Services.AddControllersWithViews();
+builder.Services.AddRazorPages();
 
 // Add Entity Framework with SQL Server
 builder.Services.AddDbContext<LibraryContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Add Identity services with UI support
+// Add Identity - FIXED: This handles web authentication
 builder.Services.AddDefaultIdentity<IdentityUser>(options => {
-    options.SignIn.RequireConfirmedAccount = false;
     options.Password.RequireDigit = true;
     options.Password.RequiredLength = 6;
     options.Password.RequireNonAlphanumeric = false;
     options.Password.RequireUppercase = false;
     options.Password.RequireLowercase = false;
+    options.User.RequireUniqueEmail = true;
 })
 .AddRoles<IdentityRole>()
-.AddEntityFrameworkStores<LibraryContext>();
+.AddEntityFrameworkStores<LibraryContext>()
+.AddDefaultUI();
+
+// Configure application cookies - This handles web login
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/Identity/Account/Login";
+    options.LogoutPath = "/Identity/Account/Logout";
+    options.AccessDeniedPath = "/Identity/Account/AccessDenied";
+    options.Cookie.HttpOnly = true;
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
+    options.SlidingExpiration = true;
+});
+
+// FIXED: Add JWT ONLY for API endpoints - don't make it default
+builder.Services.AddAuthentication()
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"] ?? "LibraryManagementSystem",
+            ValidAudience = builder.Configuration["Jwt:Audience"] ?? "LibraryManagementSystem",
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.ASCII.GetBytes(builder.Configuration["Jwt:SecretKey"] ?? "MinhaChaveSecretaSuperSeguraParaJWT123456789"))
+        };
+    });
 
 // Add SignalR
 builder.Services.AddSignalR();
@@ -39,35 +73,18 @@ builder.Services.AddControllers()
 
 // Add Swagger/OpenAPI
 builder.Services.AddEndpointsApiExplorer();
-// Add this before builder.Build()
-builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title = "Sistema de Gestão de Biblioteca API",
+        Title = "Sistema de GestÃ£o de Biblioteca API",
         Version = "v1",
-        Description = "API para Sistema de Gestão de Biblioteca"
+        Description = "API para Sistema de GestÃ£o de Biblioteca - Desenvolvimento Web - IPT"
     });
-
-    // Explicitly handle XML documentation
-    try
-    {
-        var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
-        var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-        if (File.Exists(xmlPath))
-        {
-            c.IncludeXmlComments(xmlPath);
-        }
-    }
-    catch
-    {
-        // Ignore XML documentation errors during deployment
-    }
 
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "JWT Authorization header using the Bearer scheme",
+        Description = "JWT Authorization header using the Bearer scheme. Exemplo: \"Authorization: Bearer {token}\"",
         Name = "Authorization",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.ApiKey,
@@ -90,10 +107,9 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Configure the HTTP request pipeline
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -101,15 +117,14 @@ if (!app.Environment.IsDevelopment())
 }
 else
 {
-    // Invocar o seed da BD apenas em desenvolvimento
     app.UseItToSeedSqlServer();
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Sistema de GestÃ£o de Biblioteca API V1");
+        c.RoutePrefix = "api-docs";
+    });
 }
-app.UseSwagger();
-app.UseSwaggerUI(c =>
-{
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Sistema de Gestão de Biblioteca API V1");
-    c.RoutePrefix = "api-docs";
-});
 app.MapGet("/", async context =>
 {
     if (!context.User.Identity.IsAuthenticated)
@@ -118,7 +133,7 @@ app.MapGet("/", async context =>
         return;
     }
 
-    if (context.User.IsInRole("Bibliotecário"))
+    if (context.User.IsInRole("BibliotecÃ¡rio"))
     {
         context.Response.Redirect("/Admin");
         return;
@@ -130,9 +145,10 @@ app.MapGet("/", async context =>
         return;
     }
 
+    context.Response.Redirect("/Identity/Account/AccessDenied");
+});
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-
 app.UseRouting();
 
 app.UseAuthentication();
@@ -140,9 +156,10 @@ app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+    pattern: "{controller=Home}/{action=Index}");
 
-app.MapRazorPages(); // Required for Identity UI
-app.MapHub<LibraryHub>("/libraryHub");
+app.MapControllers();
+app.MapRazorPages();
+app.MapHub<BookReviewHub>("/bookReviewHub");
 
 app.Run();

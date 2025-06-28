@@ -1,0 +1,214 @@
+﻿@model List<LibraryManagementSystem.ViewModels.BookViewModel>
+@{
+    ViewData["Title"] = "Catálogo de Livros";
+    Layout = "_Layout";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/member-dashboard.css" asp-append-version="true" />
+    <style>
+        .rating-counter {
+            padding: 8px;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.02);
+            transition: all 0.3s ease;
+        }
+
+        .rating-counter:hover {
+            background: rgba(0,0,0,0.05);
+            transform: translateY(-2px);
+        }
+
+        .book-rating-display {
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            padding: 15px;
+            background: #f8f9fa;
+        }
+
+        .status-available {
+            background: #28a745;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+
+        .status-borrowed {
+            background: #ffc107;
+            color: #212529;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+
+        .status-unavailable {
+            background: #6c757d;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+    </style>
+}
+
+<div class="container-fluid custom-width-container member-container">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="welcome-header text-center py-4">
+                <h1 class="display-5">
+                    <i class="fas fa-book me-3"></i>Catálogo de Livros
+                </h1>
+                <p class="lead">Explore nossa coleção de livros disponíveis</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="row mb-4">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-body">
+                    <form method="get">
+                        <div class="input-group input-group-lg">
+                            <input type="text" name="search" class="form-control"
+                                   placeholder="Pesquisar por título, autor ou categoria..."
+                                   value="@ViewData["CurrentFilter"]">
+                            <button class="btn btn-primary" type="submit">
+                                <i class="fas fa-search"></i> Pesquisar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Books Grid -->
+    <div class="row">
+        @if (Model != null && Model.Any())
+        {
+            @foreach (var bookViewModel in Model)
+            {
+
+                // Calculate statistics from BookReviews
+                var likes = bookViewModel.Book.BookReviews?.Count(r => r.IsLike) ?? 0;
+                var dislikes = bookViewModel.Book.BookReviews?.Count(r => !r.IsLike) ?? 0;
+                var averageRating = bookViewModel.Book.BookReviews?.Where(r => r.Rating.HasValue).Average(r => r.Rating) ?? 0;
+                var totalReviews = bookViewModel.Book.BookReviews?.Count() ?? 0;
+                var activeBorrowing = bookViewModel.Book.Borrowings?.FirstOrDefault(b => b.Status == "Emprestado");
+                
+
+                <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+                    <div class="card book-card h-100">
+                        <div class="card-body">
+                            <!-- Book Info -->
+                            <div class="text-center mb-3">
+                                <i class="fas fa-book fa-3x text-primary mb-2"></i>
+                                <h6 class="card-title font-weight-bold">@bookViewModel.Book.Title</h6>
+                                <p class="text-muted mb-1">@bookViewModel.Book.Author</p>
+                                <small class="text-muted">
+                                    <i class="fas fa-tag me-1"></i>
+                                    @if (bookViewModel.Book.Categories != null && bookViewModel.Book.Categories.Any())
+                                    {
+                                        @string.Join(", ", bookViewModel.Book.Categories.Select(c => c.Name))
+                                    }
+                                    else
+                                    {
+                                        <text>Sem categoria</text>
+                                    }
+                                    <br>
+                                    <i class="fas fa-calendar me-1"></i>@bookViewModel.Book.YearPublished
+                                </small>
+                            </div>
+
+                            <!-- Availability Status -->
+                            <div class="text-center mb-3">
+                                @if (activeBorrowing != null)
+                                {
+                                    <span class="status-borrowed">
+                                        <i class="fas fa-clock me-1"></i>
+                                        Emprestado
+                                    </span>
+                                }
+                                else if (bookViewModel.Book.Available)
+                                {
+                                    <span class="status-available">
+                                        <i class="fas fa-check me-1"></i>
+                                        Disponível
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="status-unavailable">
+                                        <i class="fas fa-ban me-1"></i>
+                                        Indisponível
+                                    </span>
+                                }
+                            </div>
+
+                            <!-- Book Statistics -->
+                            <div class="book-rating-display mb-3">
+                                <div class="row text-center mb-2">
+                                    <div class="col-4">
+                                        <div class="rating-counter">
+                                            <i class="fas fa-thumbs-up text-success"></i>
+                                            <div class="h6 mb-0 text-success">@likes</div>
+                                            <small class="text-muted">Gostos</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="rating-counter">
+                                            <i class="fas fa-thumbs-down text-danger"></i>
+                                            <div class="h6 mb-0 text-danger">@dislikes</div>
+                                            <small class="text-muted">Não Gostos</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="rating-counter">
+                                            <i class="fas fa-star text-warning"></i>
+                                            <div class="h6 mb-0 text-warning">@Math.Round(averageRating, 1)</div>
+                                            <small class="text-muted">Média</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                @if (totalReviews > 0)
+                                {
+                                    <div class="text-center">
+                                        <small class="badge bg-info">@totalReviews avaliação(ões)</small>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="text-center">
+                                        <small class="badge bg-secondary">Sem avaliações</small>
+                                    </div>
+                                }
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="text-center">
+                                <a asp-controller="Books" asp-action="View" asp-route-id="@bookViewModel.Book.BookId"
+                                   class="btn btn-outline-primary btn-sm" target="_blank">
+                                    <i class="fas fa-eye me-1"></i>Ver Detalhes
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col-12">
+                <div class="text-center py-5">
+                    <i class="fas fa-search fa-4x text-muted mb-3"></i>
+                    <h5 class="text-muted">Nenhum livro encontrado</h5>
+                    <p class="text-muted">Tente ajustar os critérios de pesquisa.</p>
+                </div>
+            </div>
+        }
+    </div>
+</div>
