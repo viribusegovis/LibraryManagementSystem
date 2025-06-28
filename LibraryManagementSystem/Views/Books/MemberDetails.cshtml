@@ -297,9 +297,78 @@
                     @if (Model.BookReviews != null && Model.BookReviews.Any())
                     {
                         <div class="rating-section">
-                            @foreach (var review in Model.BookReviews.OrderByDescending(r => r.ReviewDate))
+                            @{
+                                // Get current user's review first
+                                var currentUserEmail = User.Identity.Name;
+                                var userReview = Model.BookReviews.FirstOrDefault(r =>
+                                r.Member != null && r.Member.Email == currentUserEmail);
+                                var otherReviews = Model.BookReviews.Where(r =>
+                                r.Member == null || r.Member.Email != currentUserEmail)
+                                .OrderByDescending(r => r.ReviewDate);
+                            }
+
+                            <!-- Current User's Review (if exists) -->
+                            @if (userReview != null)
                             {
-                                <div class="card review-card @(review.IsLike ? "review-like" : "review-dislike") mb-3" id="review-@review.BookReviewId">
+                                <div class="card review-card @(userReview.IsLike ? "review-like" : "review-dislike") mb-3 border-primary"
+                                     id="review-@userReview.BookReviewId">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <div class="card-icon bg-primary me-3"
+                                                     style="width: 40px; height: 40px; font-size: 1rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white;">
+                                                    @userReview.Member.Name.Substring(0, 1).ToUpper()
+                                                </div>
+                                                <div>
+                                                    <h6 class="mb-0">@userReview.Member.Name (Você)</h6>
+                                                    <small class="text-muted">@userReview.ReviewDate.ToString("dd/MM/yyyy HH:mm")</small>
+                                                    @if (userReview.Rating.HasValue)
+                                                    {
+                                                        <div class="rating-display">
+                                                            @for (int i = 1; i <= 5; i++)
+                                                            {
+                                                                <span class="@(i <= userReview.Rating ? "text-warning" : "text-muted")">⭐</span>
+                                                            }
+                                                            <small class="ms-1">(@userReview.Rating/5)</small>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </div>
+                                            <div class="text-end">
+                                                <span class="badge @(userReview.IsLike ? "bg-success" : "bg-danger") me-2">
+                                                    <i class="fas fa-thumbs-@(userReview.IsLike ? "up" : "down") me-1"></i>
+                                                    @(userReview.IsLike ? "Gosto" : "Não Gosto")
+                                                </span>
+                                                <!-- Edit and Delete buttons for user's own review -->
+                                                <a asp-controller="BookReviews" asp-action="Edit" asp-route-id="@userReview.BookReviewId"
+                                                   class="btn btn-sm btn-outline-primary" title="Editar avaliação">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <form asp-controller="BookReviews" asp-action="Delete" method="post" class="d-inline ms-1">
+                                                    <input type="hidden" name="id" value="@userReview.BookReviewId" />
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                            onclick="return confirm('Tem certeza que deseja eliminar a sua avaliação?')"
+                                                            title="Eliminar avaliação">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(userReview.Comment))
+                                        {
+                                            <div class="mt-2">
+                                                <p class="mb-0">@userReview.Comment</p>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+
+                            <!-- Other Users' Reviews -->
+                            @foreach (var review in otherReviews)
+                            {
+                                <div class="card review-card @(review.IsLike ? "review-like" : "review-dislike") mb-3"
+                                     id="review-@review.BookReviewId">
                                     <div class="card-body">
                                         <div class="d-flex justify-content-between align-items-start">
                                             <div class="d-flex align-items-center mb-2">
@@ -340,14 +409,7 @@
                             }
                         </div>
                     }
-                    else
-                    {
-                        <div class="text-center py-5">
-                            <i class="fas fa-comments fa-3x text-muted mb-3"></i>
-                            <h5 class="text-muted">Ainda não há avaliações</h5>
-                            <p class="text-muted">Seja o primeiro a avaliar este livro!</p>
-                        </div>
-                    }
+
                 </div>
             </div>
         </div>
