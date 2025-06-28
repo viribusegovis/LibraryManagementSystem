@@ -1,0 +1,351 @@
+﻿@* Views/Home/About.cshtml *@
+@{
+    ViewData["Title"] = "Sobre o Sistema";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+}
+
+<div class="container-fluid custom-width-container dashboard-container">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="dashboard-header text-center">
+                <h1 class="h2 mb-3">
+                    <i class="fas fa-info-circle me-3"></i>Sobre o Sistema de Gestão de Biblioteca
+                </h1>
+                <p class="lead">Sistema desenvolvido para a disciplina de Desenvolvimento Web</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Academic Information -->
+    <div class="row mb-4">
+        <div class="col-lg-6 mb-4">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-graduation-cap me-2"></i>Informações Académicas
+                    </h6>
+                </div>
+                <div class="card-body card-content">
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <strong>Curso:</strong><br>
+                            <span class="text-gray-800">Licenciatura em Engenharia Informática</span>
+                        </div>
+                        <div class="col-12 mb-3">
+                            <strong>Disciplina:</strong><br>
+                            <span class="text-gray-800">Desenvolvimento Web</span>
+                        </div>
+                        <div class="col-12 mb-3">
+                            <strong>Ano Letivo:</strong><br>
+                            <span class="text-gray-800">2024/2025</span>
+                        </div>
+                        <div class="col-12">
+                            <strong>Semestre:</strong><br>
+                            <span class="text-gray-800">2º ano, 2º semestre</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-4">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-users me-2"></i>Autores do Trabalho
+                    </h6>
+                </div>
+                <div class="card-body card-content">
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <div class="d-flex align-items-center">
+                                <div class="card-icon bg-primary-gradient me-3">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <div>
+                                    <strong>22912 - Bruno Miguel Simões Freitas:</strong><br>
+                                    <span class="text-gray-800">aluno22912@ipt.pt</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Technologies Used -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-code me-2"></i>Tecnologias e Frameworks Utilizados
+                    </h6>
+                </div>
+                <div class="card-body card-content">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <h6 class="text-primary">
+                                <i class="fas fa-cogs me-2"></i>Tecnologias Principais
+                            </h6>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <strong>ASP.NET Core MVC</strong> - Framework web principal
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <strong>Entity Framework Core</strong> - ORM para acesso a dados
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <strong>LINQ</strong> - Consultas integradas à linguagem
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <strong>SignalR</strong> - Comunicação em tempo real
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <strong>ASP.NET Core Identity</strong> - Sistema de autenticação
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <h6 class="text-info">
+                                <i class="fas fa-palette me-2"></i>Frontend e UI
+                            </h6>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <strong>Bootstrap 5</strong> - Framework CSS responsivo
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <strong>Font Awesome</strong> - Ícones vetoriais
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <strong>jQuery</strong> - Biblioteca JavaScript
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <strong>CSS3</strong> - Estilos personalizados
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <strong>Razor Pages</strong> - Motor de templates
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Access Credentials -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-key me-2"></i>Credenciais de Acesso Inicial
+                    </h6>
+                </div>
+                <div class="card-body card-content">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Nota:</strong> Estas credenciais são apenas para demonstração e avaliação académica.
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="card" style="background-color: #f8f9fa; border: 1px solid #dee2e6;">
+                                <div class="card-body">
+                                    <h6 class="card-title text-primary">
+                                        <i class="fas fa-user-tie me-2"></i>Bibliotecário (Administrador)
+                                    </h6>
+                                    <p class="mb-1">
+                                        <strong>Email:</strong>
+                                        <code>bibliotecario@biblioteca.pt</code>
+                                    </p>
+                                    <p class="mb-0">
+                                        <strong>Password:</strong>
+                                        <code>Biblioteca123!</code>
+                                    </p>
+                                    <small class="text-muted">
+                                        Acesso completo ao sistema de gestão
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card" style="background-color: #f8f9fa; border: 1px solid #dee2e6;">
+                                <div class="card-body">
+                                    <h6 class="card-title text-success">
+                                        <i class="fas fa-user me-2"></i>Membro da Biblioteca
+                                    </h6>
+                                    <p class="mb-1">
+                                        <strong>Email:</strong>
+                                        <code>joao.silva@email.com</code>
+                                    </p>
+                                    <p class="mb-0">
+                                        <strong>Password:</strong>
+                                        <code>Membro123!</code>
+                                    </p>
+                                    <small class="text-muted">
+                                        Acesso ao catálogo e área pessoal
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Features -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-list-check me-2"></i>Funcionalidades Implementadas
+                    </h6>
+                </div>
+                <div class="card-body card-content">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <h6 class="text-primary">
+                                <i class="fas fa-database me-2"></i>Gestão de Dados
+                            </h6>
+                            <ul class="list-unstyled">
+                                <li class="mb-1">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    CRUD completo para Livros, Membros, Categorias e Empréstimos
+                                </li>
+                                <li class="mb-1">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    Relacionamentos um-para-muitos e muitos-para-muitos
+                                </li>
+                                <li class="mb-1">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    Validação de dados e tratamento de erros
+                                </li>
+                                <li class="mb-1">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    Sistema de pesquisa e filtragem
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <h6 class="text-success">
+                                <i class="fas fa-shield-alt me-2"></i>Segurança e Controlo
+                            </h6>
+                            <ul class="list-unstyled">
+                                <li class="mb-1">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    Sistema de autenticação e autorização
+                                </li>
+                                <li class="mb-1">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    Controlo de acesso baseado em roles
+                                </li>
+                                <li class="mb-1">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    Interface em português (obrigatório)
+                                </li>
+                                <li class="mb-1">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    Páginas de erro personalizadas
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Database Schema -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-sitemap me-2"></i>Estrutura da Base de Dados
+                    </h6>
+                </div>
+                <div class="card-body card-content">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Tabela</th>
+                                    <th>Descrição</th>
+                                    <th>Relacionamentos</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Books</strong></td>
+                                    <td>Catálogo de livros da biblioteca</td>
+                                    <td>Muitos-para-muitos com Categories</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Categories</strong></td>
+                                    <td>Categorias de classificação dos livros</td>
+                                    <td>Muitos-para-muitos com Books</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Members</strong></td>
+                                    <td>Membros registados na biblioteca</td>
+                                    <td>Um-para-muitos com Borrowings</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Borrowings</strong></td>
+                                    <td>Registo de empréstimos de livros</td>
+                                    <td>Muitos-para-um com Books e Members</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>BookReviews</strong></td>
+                                    <td>Avaliações e comentários dos membros</td>
+                                    <td>Muitos-para-um com Books e Members</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>AspNetUsers</strong></td>
+                                    <td>Sistema de autenticação (Identity)</td>
+                                    <td>Um-para-um com Members</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card dashboard-card">
+                <div class="card-body card-content text-center">
+                    <p class="mb-2">
+                        <i class="fas fa-calendar me-2"></i>
+                        Desenvolvido em <strong>@DateTime.Now.Year</strong> para a disciplina de Desenvolvimento Web
+                    </p>
+                    <p class="mb-0 text-muted">
+                        Instituto Politécnico de Tomar - Licenciatura em Engenharia Informática
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

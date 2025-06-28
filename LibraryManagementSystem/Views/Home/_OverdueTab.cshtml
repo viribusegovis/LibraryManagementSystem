@@ -1,0 +1,141 @@
+﻿@* Views/Home/_OverdueTab.cshtml - Updated with counters and rating display *@
+@model LibraryManagementSystem.ViewModels.MemberDashboardViewModel
+
+<div class="row">
+    @{
+        var overdueBooks = Model.Member?.Borrowings?
+        .Where(b => b.Status == "Emprestado" && b.DueDate < DateTime.Now)
+        .ToList() ?? new List<Borrowing>();
+    }
+
+    @if (overdueBooks.Any())
+    {
+        @foreach (var borrowing in overdueBooks)
+        {
+            var likes = borrowing.Book.BookReviews?.Count(r => r.IsLike) ?? 0;
+            var dislikes = borrowing.Book.BookReviews?.Count(r => !r.IsLike) ?? 0;
+            var averageRating = borrowing.Book.BookReviews?.Where(r => r.Rating.HasValue).Average(r => r.Rating) ?? 0;
+            var totalReviews = borrowing.Book.BookReviews?.Count() ?? 0;
+            var hasReviewed = borrowing.Book.BookReviews?.Any(r => r.MemberId == Model.Member.MemberId) ?? false;
+
+            <div class="col-lg-4 col-md-6 mb-4" id="book-@borrowing.Book.BookId">
+                <div class="card book-card h-100 border-danger">
+                    <div class="card-body">
+                        <!-- Book Info -->
+                        <div class="text-center mb-3">
+                            <i class="fas fa-book fa-3x text-danger mb-2"></i>
+                            <h6 class="card-title font-weight-bold">@borrowing.Book.Title</h6>
+                            <p class="text-muted mb-1">@borrowing.Book.Author</p>
+                            <small class="text-muted">
+                                <i class="fas fa-tag me-1"></i>
+                                @if (borrowing.Book.Categories != null && borrowing.Book.Categories.Any())
+                                {
+                                    @string.Join(", ", borrowing.Book.Categories.Select(c => c.Name))
+                                }
+                                else
+                                {
+                                    <text>Sem categoria</text>
+                                }
+                                |
+                                <i class="fas fa-calendar me-1"></i>@borrowing.Book.YearPublished
+                            </small>
+                        </div>
+
+                        <!-- Overdue Status -->
+                        <div class="text-center mb-3">
+                            <span class="status-badge status-overdue">
+                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                @((DateTime.Now - borrowing.DueDate).Days) dias em atraso
+                            </span>
+                            <br>
+                            <small class="text-danger mt-1">
+                                Prazo: @borrowing.DueDate.ToString("dd/MM/yyyy")
+                            </small>
+                        </div>
+
+                        <!-- Urgent Action Alert -->
+                        <div class="alert alert-danger text-center mb-3">
+                            <i class="fas fa-clock me-1"></i>
+                            <strong>Devolução Urgente!</strong><br>
+                            <small>Este livro deve ser devolvido o mais rápido possível</small>
+                        </div>
+
+                        <!-- Book Statistics -->
+                        <div class="book-interactions">
+                            <!-- Rating Statistics -->
+                            <div class="book-rating-display mb-3">
+
+                                <div class="row text-center mb-2">
+                                    <div class="col-4">
+                                        <div class="rating-counter">
+                                            <i class="fas fa-thumbs-up text-success fa-lg"></i>
+                                            <div class="h6 mb-0 text-success">@likes</div>
+                                            <small class="text-muted">Gostos</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="rating-counter">
+                                            <i class="fas fa-thumbs-down text-danger fa-lg"></i>
+                                            <div class="h6 mb-0 text-danger">@dislikes</div>
+                                            <small class="text-muted">Não Gostos</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="rating-counter">
+                                            <i class="fas fa-star text-warning fa-lg"></i>
+                                            <div class="h6 mb-0 text-warning">@Math.Round(averageRating, 1)</div>
+                                            <small class="text-muted">Média</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                @if (totalReviews > 0)
+                                {
+                                    <div class="text-center mb-2">
+                                        <small class="badge bg-info">@totalReviews avaliação(ões)</small>
+                                    </div>
+                                }
+                            </div>
+
+                            <!-- Evaluation Status and Actions -->
+                            <div class="can-evaluate">
+                                <div class="text-center mb-3">
+
+                                    @if (!hasReviewed)
+                                    {
+                                        <small class="text-success d-block mb-2">
+                                            <i class="fas fa-check-circle me-1"></i>
+                                            Pode avaliar este livro
+                                        </small>
+                                    }
+                                    else
+                                    {
+                                        <small class="text-info d-block mb-2">
+                                            <i class="fas fa-star me-1"></i>
+                                            Já avaliou este livro
+                                        </small>
+                                    }
+
+                                    <a asp-controller="Books" asp-action="View" asp-route-id="@borrowing.Book.BookId"
+                                       class="btn btn-outline-primary btn-sm" target="_blank">
+                                        <i class="fas fa-eye me-1"></i>Ver Detalhes
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="col-12">
+            <div class="member-card text-center py-5">
+                <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
+                <h5 class="text-success">Parabéns! Nenhum livro em atraso</h5>
+                <p class="text-muted">Todos os seus empréstimos estão dentro do prazo.</p>
+            </div>
+        </div>
+    }
+</div>

@@ -1,0 +1,342 @@
+﻿@* Views/Books/Delete.cshtml - Book deletion with dependencies and availability toggle *@
+@model LibraryManagementSystem.Models.Book
+@{
+    ViewData["Title"] = "Eliminar Livro";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+}
+
+<div class="container-fluid custom-width-container dashboard-container">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center dashboard-header">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-trash me-2"></i>Eliminar Livro
+                    </h1>
+                    <p class="mb-0">Confirmar eliminação do livro e suas dependências</p>
+                </div>
+                <div class="text-end">
+                    <a asp-action="Index" class="btn btn-secondary me-2">
+                        <i class="fas fa-arrow-left me-1"></i>Voltar à Lista
+                    </a>
+                    <a asp-action="Details" asp-route-id="@Model.BookId" class="btn btn-info">
+                        <i class="fas fa-eye me-1"></i>Ver Detalhes
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Book Details and Actions -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card dashboard-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Confirmação de Eliminação
+                    </h6>
+                    @{
+                        var activeBorrowing = Model.Borrowings?.FirstOrDefault(b => b.Status == "Emprestado");
+                        var hasHistory = Model.Borrowings?.Any() == true;
+                    }
+                    @if (activeBorrowing != null)
+                    {
+                        <span class="badge bg-danger">Eliminação Bloqueada</span>
+                    }
+                    else if (hasHistory)
+                    {
+                        <span class="badge bg-warning">Tem Histórico</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-success">Pode Eliminar</span>
+                    }
+                </div>
+                <div class="card-body card-content">
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="fas fa-exclamation-triangle me-2"></i>@TempData["ErrorMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="fas fa-check me-2"></i>@TempData["SuccessMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    @if (activeBorrowing != null)
+                    {
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Não é possível eliminar este livro!</strong><br>
+                            O livro está atualmente emprestado a <strong>@activeBorrowing.Member.Name</strong> até @activeBorrowing.DueDate.ToString("dd/MM/yyyy").
+                        </div>
+                    }
+                    else if (hasHistory)
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Atenção:</strong> Este livro tem histórico de empréstimos. A eliminação irá remover permanentemente:
+                            <ul class="mb-0 mt-2">
+                                <li>@Model.Borrowings.Count() registo(s) de empréstimo</li>
+                                <li>@(Model.BookReviews?.Count() ?? 0) avaliação(ões) de membros</li>
+                                <li>Todas as associações com categorias</li>
+                            </ul>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Este livro não tem histórico de empréstimos e pode ser eliminado com segurança.
+                        </div>
+                    }
+
+                    <!-- Book Information Table -->
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Livro</th>
+                                    <th>ISBN</th>
+                                    <th>Categorias</th>
+                                    <th>Estado Atual</th>
+                                    <th>Histórico</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="@(activeBorrowing != null ? "table-danger" : hasHistory ? "table-warning" : "table-success")">
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="card-icon @(activeBorrowing != null ? "bg-danger" : hasHistory ? "bg-warning-gradient" : "bg-success-gradient") me-3" style="width: 40px; height: 40px; font-size: 1rem;">
+                                                <i class="fas fa-book"></i>
+                                            </div>
+                                            <div>
+                                                <strong>@Model.Title</strong><br>
+                                                <small class="text-muted">@Model.Author</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(Model.ISBN))
+                                        {
+                                            <span class="badge bg-secondary">@Model.ISBN</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">N/A</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (Model.Categories != null && Model.Categories.Any())
+                                        {
+                                            @foreach (var category in Model.Categories.Take(2))
+                                            {
+                                                <span class="badge bg-info me-1">@category.Name</span>
+                                            }
+                                            @if (Model.Categories.Count > 2)
+                                            {
+                                                <small class="text-muted">+@(Model.Categories.Count - 2) mais</small>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Sem categoria</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (activeBorrowing != null)
+                                        {
+                                            <span class="badge bg-warning">
+                                                <i class="fas fa-clock me-1"></i>Emprestado
+                                            </span>
+                                        }
+                                        else if (Model.Available)
+                                        {
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check me-1"></i>Disponível
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">
+                                                <i class="fas fa-ban me-1"></i>Indisponível
+                                            </span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">@Model.Borrowings.Count() empréstimos</span><br>
+                                        <span class="badge bg-info">@(Model.BookReviews?.Count() ?? 0) avaliações</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Dependencies Section -->
+                    @if (hasHistory)
+                    {
+                        <div class="mt-4">
+                            <h6>Dependências que serão eliminadas:</h6>
+
+                            <!-- Borrowings History -->
+                            @if (Model.Borrowings.Any())
+                            {
+                                <div class="mb-3">
+                                    <h6 class="text-warning">
+                                        <i class="fas fa-handshake me-1"></i>Histórico de Empréstimos (@Model.Borrowings.Count()):
+                                    </h6>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Membro</th>
+                                                    <th>Data Empréstimo</th>
+                                                    <th>Estado</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var borrowing in Model.Borrowings.OrderByDescending(b => b.BorrowDate).Take(3))
+                                                {
+                                                    <tr>
+                                                        <td>@borrowing.Member.Name</td>
+                                                        <td>@borrowing.BorrowDate.ToString("dd/MM/yyyy")</td>
+                                                        <td>
+                                                            <span class="badge @(borrowing.Status == "Emprestado" ? "bg-warning" : "bg-success")">
+                                                                @borrowing.Status
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                }
+                                                @if (Model.Borrowings.Count() > 3)
+                                                {
+                                                    <tr>
+                                                        <td colspan="3" class="text-center text-muted">
+                                                            <i class="fas fa-plus me-1"></i>
+                                                            Mais @(Model.Borrowings.Count() - 3) empréstimo(s)...
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            }
+
+                            <!-- Reviews -->
+                            @if (Model.BookReviews != null && Model.BookReviews.Any())
+                            {
+                                <div class="mb-3">
+                                    <h6 class="text-info">
+                                        <i class="fas fa-star me-1"></i>Avaliações (@Model.BookReviews.Count()):
+                                    </h6>
+                                    <div class="d-flex gap-3">
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-thumbs-up me-1"></i>
+                                            @Model.BookReviews.Count(r => r.IsLike) Gostos
+                                        </span>
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-thumbs-down me-1"></i>
+                                            @Model.BookReviews.Count(r => !r.IsLike) Não Gostos
+                                        </span>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex justify-content-between mt-4">
+                        <div>
+                            <a asp-action="Index" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i>Cancelar
+                            </a>
+                        </div>
+                        <div>
+                            <!-- Availability Toggle (Alternative to deletion) -->
+                            @if (activeBorrowing == null)
+                            {
+                                <form asp-action="ToggleAvailability" method="post" class="d-inline me-2">
+                                    <input type="hidden" name="id" value="@Model.BookId" />
+                                    <button type="submit" class="btn @(Model.Available ? "btn-warning" : "btn-success")"
+                                            onclick="return confirm('@(Model.Available ? "Marcar este livro como indisponível?" : "Marcar este livro como disponível?")')">
+                                        <i class="fas fa-toggle-@(Model.Available ? "off" : "on") me-1"></i>
+                                        @(Model.Available ? "Marcar Indisponível" : "Marcar Disponível")
+                                    </button>
+                                </form>
+                            }
+
+                            <!-- Delete Button -->
+                            @if (activeBorrowing == null)
+                            {
+                                <form asp-action="Delete" method="post" class="d-inline me-2">
+                                    <input type="hidden" asp-for="BookId" />
+                                    <button type="submit" class="btn btn-danger" id="deleteButton">
+                                        <i class="fas fa-trash me-1"></i>Eliminar Permanentemente
+                                    </button>
+                                </form>
+                            }
+                            else
+                            {
+                                <button class="btn btn-danger" disabled title="Não é possível eliminar - livro emprestado">
+                                    <i class="fas fa-lock me-1"></i>Eliminação Bloqueada
+                                </button>
+                            }
+
+                            <a asp-action="Edit" asp-route-id="@Model.BookId" class="btn btn-outline-primary">
+                                <i class="fas fa-edit me-1"></i>Editar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const deleteButton = document.getElementById('deleteButton');
+            const deleteForm = document.querySelector('form[asp-action="Delete"]');
+
+            if (deleteButton && deleteForm) {
+                deleteForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+
+                    const bookTitle = '@Model.Title';
+                    const borrowingCount = @Model.Borrowings.Count();
+                    const reviewCount = @(Model.BookReviews?.Count() ?? 0);
+
+                    let confirmMessage = `Tem certeza que deseja eliminar permanentemente o livro "${bookTitle}"?`;
+
+                    if (borrowingCount > 0 || reviewCount > 0) {
+                        confirmMessage += `\n\nEsta ação irá eliminar:`;
+                        if (borrowingCount > 0) {
+                            confirmMessage += `\n• ${borrowingCount} registo(s) de empréstimo`;
+                        }
+                        if (reviewCount > 0) {
+                            confirmMessage += `\n• ${reviewCount} avaliação(ões)`;
+                        }
+                        confirmMessage += `\n\nEsta ação NÃO PODE ser desfeita!`;
+                    }
+
+                    if (confirm(confirmMessage)) {
+                        deleteButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>A Eliminar...';
+                        deleteButton.disabled = true;
+                        this.submit();
+                    }
+                });
+            }
+        });
+    </script>
+}

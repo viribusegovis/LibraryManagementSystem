@@ -1,0 +1,142 @@
+﻿@model IEnumerable<LibraryManagementSystem.Models.Borrowing>
+@{
+    ViewData["Title"] = "Gestão de Empréstimos";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+}
+
+<div class="container-fluid custom-width-container dashboard-container">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center dashboard-header">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-handshake me-2"></i>Gestão de Empréstimos
+                    </h1>
+                    <p class="mb-0">Gerir empréstimos e devoluções de livros</p>
+                </div>
+                <div>
+                    <a asp-action="Create" class="btn btn-warning">
+                        <i class="fas fa-plus me-2"></i>Novo Empréstimo
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card dashboard-card">
+                <div class="card-body">
+                    <ul class="nav nav-pills" id="borrowingTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="all-tab" data-bs-toggle="pill"
+                                    data-bs-target="#all" type="button" role="tab">
+                                <i class="fas fa-list me-2"></i>Todos
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="active-tab" data-bs-toggle="pill"
+                                    data-bs-target="#active" type="button" role="tab">
+                                <i class="fas fa-clock me-2"></i>Ativos
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="overdue-tab" data-bs-toggle="pill"
+                                    data-bs-target="#overdue" type="button" role="tab">
+                                <i class="fas fa-exclamation-triangle me-2"></i>Em Atraso
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="returned-tab" data-bs-toggle="pill"
+                                    data-bs-target="#returned" type="button" role="tab">
+                                <i class="fas fa-check me-2"></i>Devolvidos
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Borrowings Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-list me-2"></i>Lista de Empréstimos
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Livro</th>
+                                    <th>Membro</th>
+                                    <th>Data Empréstimo</th>
+                                    <th>Data Limite</th>
+                                    <th>Data Devolução</th>
+                                    <th>Estado</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var borrowing in Model)
+                                {
+                                    <tr class="@(borrowing.Status == "Emprestado" && borrowing.DueDate < DateTime.Now ? "table-danger" : "")">
+                                        <td>
+                                            <strong>@borrowing.Book.Title</strong><br>
+                                            <small class="text-muted">@borrowing.Book.Author</small>
+                                        </td>
+                                        <td>
+                                            @borrowing.Member.Name<br>
+                                            <small class="text-muted">@borrowing.Member.CardNumber</small>
+                                        </td>
+                                        <td>@borrowing.BorrowDate.ToString("dd/MM/yyyy")</td>
+                                        <td>@borrowing.DueDate.ToString("dd/MM/yyyy")</td>
+                                        <td>
+                                            @(borrowing.ReturnDate?.ToString("dd/MM/yyyy") ?? "-")
+                                        </td>
+                                        <td>
+                                            @if (borrowing.Status == "Emprestado" && borrowing.DueDate < DateTime.Now)
+                                            {
+                                                <span class="badge bg-danger">Em Atraso</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge @(borrowing.Status == "Emprestado" ? "bg-warning" : "bg-success")">
+                                                    @borrowing.Status
+                                                </span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                @if (borrowing.Status == "Emprestado")
+                                                {
+                                                    <a asp-action="Return" asp-route-id="@borrowing.BorrowingId"
+                                                       class="btn btn-sm btn-success">
+                                                        <i class="fas fa-undo"></i> Devolver
+                                                    </a>
+                                                }
+                                                <a asp-action="Details" asp-route-id="@borrowing.BorrowingId"
+                                                   class="btn btn-sm btn-outline-info">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

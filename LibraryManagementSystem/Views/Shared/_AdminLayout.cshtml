@@ -1,0 +1,132 @@
+﻿<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Sistema de Gestão de Biblioteca</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    <!-- FIXED: Only show navbar if user is authenticated -->
+    @if (User.Identity.IsAuthenticated)
+    {
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="@Url.Action("Index", "Home")">
+                    <i class="fas fa-book me-2"></i>Biblioteca IPT
+                </a>
+
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav me-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Home" asp-action="Index">
+                                <i class="fas fa-home me-1"></i>Início
+                            </a>
+                        </li>
+
+                        @if (User.IsInRole("Bibliotecário"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Members" asp-action="Index">
+                                    <i class="fas fa-users me-1"></i>Membros
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Categories" asp-action="Index">
+                                    <i class="fas fa-tags me-1"></i>Categorias
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Borrowings" asp-action="Index">
+                                    <i class="fas fa-handshake me-1"></i>Empréstimos
+                                </a>
+                            </li>
+                        }
+
+                        @if (User.IsInRole("Membro"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Books" asp-action="Catalog">
+                                    <i class="fas fa-book-open me-1"></i>Catálogo
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Borrowings" asp-action="MyBorrowings">
+                                    <i class="fas fa-history me-1"></i>Meus Empréstimos
+                                </a>
+                            </li>
+                        }
+
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Home" asp-action="About">
+                                <i class="fas fa-info-circle me-1"></i>Sobre
+                            </a>
+                        </li>
+                    </ul>
+
+                    <ul class="navbar-nav">
+                        @if (User.Identity.IsAuthenticated)
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                    <i class="fas fa-user-circle me-1"></i>@User.Identity.Name
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <a class="dropdown-item" asp-area="Identity" asp-page="/Account/Manage/Index">
+                                            <i class="fas fa-user-edit me-2"></i>Meu Perfil
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <form asp-area="Identity" asp-page="/Account/Logout" method="post" class="d-inline">
+                                            <button type="submit" class="dropdown-item">
+                                                <i class="fas fa-sign-out-alt me-2"></i>Sair
+                                            </button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="Identity" asp-page="/Account/Login">
+                                    <i class="fas fa-sign-in-alt me-1"></i>Entrar
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    }
+
+    <!-- FIXED: Add top padding when navbar is present -->
+    <main role="main" class="pt-5 mt-3">
+        @RenderBody()
+    </main>
+
+    <!-- FIXED: Only show footer if user is authenticated -->
+    @if (User.Identity.IsAuthenticated)
+    {
+        <!-- Footer -->
+        <footer class="bg-light text-center text-muted py-3 mt-5">
+            <div class="container">
+                <small>&copy; @DateTime.Now.Year - Sistema de Gestão de Biblioteca. Todos os direitos reservados.</small>
+            </div>
+        </footer>
+    }
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

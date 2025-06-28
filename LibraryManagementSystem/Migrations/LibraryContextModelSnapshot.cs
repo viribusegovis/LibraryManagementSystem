@@ -22,6 +22,21 @@ namespace LibraryManagementSystem.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("BookCategory", b =>
+                {
+                    b.Property<Guid>("BookId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CategoryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("BookId", "CategoryId");
+
+                    b.HasIndex("CategoryId");
+
+                    b.ToTable("BookCategories", (string)null);
+                });
+
             modelBuilder.Entity("LibraryManagementSystem.Models.Book", b =>
                 {
                     b.Property<Guid>("BookId")
@@ -36,9 +51,6 @@ namespace LibraryManagementSystem.Migrations
 
                     b.Property<bool>("Available")
                         .HasColumnType("bit");
-
-                    b.Property<Guid>("CategoryId")
-                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
@@ -57,8 +69,6 @@ namespace LibraryManagementSystem.Migrations
 
                     b.HasKey("BookId");
 
-                    b.HasIndex("CategoryId");
-
                     b.ToTable("Books");
                 });
 
@@ -76,7 +86,7 @@ namespace LibraryManagementSystem.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
-                    b.Property<bool?>("IsLiked")
+                    b.Property<bool>("IsLike")
                         .HasColumnType("bit");
 
                     b.Property<Guid>("MemberId")
@@ -116,10 +126,6 @@ namespace LibraryManagementSystem.Migrations
                     b.Property<Guid>("MemberId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Notes")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
                     b.Property<DateTime?>("ReturnDate")
                         .HasColumnType("datetime2");
 
@@ -144,20 +150,14 @@ namespace LibraryManagementSystem.Migrations
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("NEWID()");
 
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("datetime2");
-
                     b.Property<string>("Description")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.HasKey("CategoryId");
 
@@ -174,6 +174,13 @@ namespace LibraryManagementSystem.Migrations
                     b.Property<string>("Address")
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("CardNumber")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime?>("DateOfBirth")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -195,7 +202,12 @@ namespace LibraryManagementSystem.Migrations
                         .HasMaxLength(15)
                         .HasColumnType("nvarchar(15)");
 
+                    b.Property<string>("UserId")
+                        .HasColumnType("nvarchar(450)");
+
                     b.HasKey("MemberId");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("Members");
                 });
@@ -402,27 +414,31 @@ namespace LibraryManagementSystem.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("LibraryManagementSystem.Models.Book", b =>
+            modelBuilder.Entity("BookCategory", b =>
                 {
-                    b.HasOne("LibraryManagementSystem.Models.Category", "Category")
-                        .WithMany("Books")
-                        .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                    b.HasOne("LibraryManagementSystem.Models.Book", null)
+                        .WithMany()
+                        .HasForeignKey("BookId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Category");
+                    b.HasOne("LibraryManagementSystem.Models.Category", null)
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("LibraryManagementSystem.Models.BookReview", b =>
                 {
                     b.HasOne("LibraryManagementSystem.Models.Book", "Book")
-                        .WithMany("Reviews")
+                        .WithMany("BookReviews")
                         .HasForeignKey("BookId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("LibraryManagementSystem.Models.Member", "Member")
-                        .WithMany("Reviews")
+                        .WithMany("BookReviews")
                         .HasForeignKey("MemberId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -449,6 +465,16 @@ namespace LibraryManagementSystem.Migrations
                     b.Navigation("Book");
 
                     b.Navigation("Member");
+                });
+
+            modelBuilder.Entity("LibraryManagementSystem.Models.Member", b =>
+                {
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -504,21 +530,16 @@ namespace LibraryManagementSystem.Migrations
 
             modelBuilder.Entity("LibraryManagementSystem.Models.Book", b =>
                 {
+                    b.Navigation("BookReviews");
+
                     b.Navigation("Borrowings");
-
-                    b.Navigation("Reviews");
-                });
-
-            modelBuilder.Entity("LibraryManagementSystem.Models.Category", b =>
-                {
-                    b.Navigation("Books");
                 });
 
             modelBuilder.Entity("LibraryManagementSystem.Models.Member", b =>
                 {
-                    b.Navigation("Borrowings");
+                    b.Navigation("BookReviews");
 
-                    b.Navigation("Reviews");
+                    b.Navigation("Borrowings");
                 });
 #pragma warning restore 612, 618
         }

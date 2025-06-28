@@ -1,0 +1,157 @@
+﻿@* Views/Home/_HistoryTab.cshtml - Updated with counters and rating display *@
+@model LibraryManagementSystem.ViewModels.MemberDashboardViewModel
+
+<div class="row">
+    @{
+        var historyBooks = Model.Member?.Borrowings?
+        .Where(b => b.Status == "Devolvido")
+        .OrderByDescending(b => b.ReturnDate)
+        .ToList() ?? new List<Borrowing>();
+    }
+
+    @if (historyBooks.Any())
+    {
+        @foreach (var borrowing in historyBooks)
+        {
+            var likes = borrowing.Book.BookReviews?.Count(r => r.IsLike) ?? 0;
+            var dislikes = borrowing.Book.BookReviews?.Count(r => !r.IsLike) ?? 0;
+            var averageRating = borrowing.Book.BookReviews?.Where(r => r.Rating.HasValue).Average(r => r.Rating) ?? 0;
+            var totalReviews = borrowing.Book.BookReviews?.Count() ?? 0;
+            var hasReviewed = borrowing.Book.BookReviews?.Any(r => r.MemberId == Model.Member.MemberId) ?? false;
+
+            <div class="col-lg-4 col-md-6 mb-4" id="history-@borrowing.Book.BookId">
+                <div class="card book-card h-100">
+                    <div class="card-body">
+                        <!-- Book Info -->
+                        <div class="text-center mb-3">
+                            <i class="fas fa-book fa-3x text-primary mb-2"></i>
+                            <h6 class="card-title font-weight-bold">@borrowing.Book.Title</h6>
+                            <p class="text-muted mb-1">@borrowing.Book.Author</p>
+                            <small class="text-muted">
+                                <i class="fas fa-tag me-1"></i>
+                                @if (borrowing.Book.Categories != null && borrowing.Book.Categories.Any())
+                                {
+                                    @string.Join(", ", borrowing.Book.Categories.Select(c => c.Name))
+                                }
+                                else
+                                {
+                                    <text>Sem categoria</text>
+                                }
+                                |
+                                <i class="fas fa-calendar me-1"></i>@borrowing.Book.YearPublished
+                            </small>
+                        </div>
+
+                        <!-- Return Status -->
+                        <div class="text-center mb-3">
+                            @{
+                                var wasOverdue = borrowing.ReturnDate > borrowing.DueDate;
+                                var duration = (borrowing.ReturnDate.Value - borrowing.BorrowDate).Days;
+                            }
+                            <span class="status-badge @(wasOverdue ? "status-overdue" : "status-returned")">
+                                <i class="fas fa-check-circle me-1"></i>
+                                Devolvido em @borrowing.ReturnDate.Value.ToString("dd/MM/yyyy")
+                            </span>
+                            <br>
+                            <small class="text-muted mt-1">
+                                Empréstimo de @duration dias
+                                @if (wasOverdue)
+                                {
+                                    var daysLate = (borrowing.ReturnDate.Value - borrowing.DueDate).Days;
+                                    <span class="text-warning">(@daysLate dias em atraso)</span>
+                                }
+                                else
+                                {
+                                    <span class="text-success">(no prazo)</span>
+                                }
+                            </small>
+                        </div>
+
+                        <!-- Book Statistics -->
+                        <div class="book-interactions">
+                            <!-- Rating Statistics -->
+                            <div class="book-rating-display mb-3">
+  
+
+                               
+
+                                <div class="row text-center mb-2">
+                                    <div class="col-4">
+                                        <div class="rating-counter">
+                                            <i class="fas fa-thumbs-up text-success fa-lg"></i>
+                                            <div class="h6 mb-0 text-success">@likes</div>
+                                            <small class="text-muted">Gostos</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="rating-counter">
+                                            <i class="fas fa-thumbs-down text-danger fa-lg"></i>
+                                            <div class="h6 mb-0 text-danger">@dislikes</div>
+                                            <small class="text-muted">Não Gostos</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="rating-counter">
+                                            <i class="fas fa-star text-warning fa-lg"></i>
+                                            <div class="h6 mb-0 text-warning">@Math.Round(averageRating, 1)</div>
+                                            <small class="text-muted">Média</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                @if (totalReviews > 0)
+                                {
+                                    <div class="text-center mb-2">
+                                        <small class="badge bg-info">@totalReviews avaliação(ões)</small>
+                                    </div>
+                                }
+                            </div>
+
+                            <!-- Evaluation Status and Actions -->
+                            <div class="can-evaluate">
+                                <div class="text-center mb-3">
+
+                                    @if (!hasReviewed)
+                                    {
+                                        <small class="text-success d-block mb-2">
+                                            <i class="fas fa-check-circle me-1"></i>
+                                            Pode avaliar este livro
+                                        </small>
+                                    }
+                                    else
+                                    {
+                                        <small class="text-info d-block mb-2">
+                                            <i class="fas fa-star me-1"></i>
+                                            Já avaliou este livro
+                                        </small>
+                                    }
+
+                                    <a asp-controller="Books" asp-action="View" asp-route-id="@borrowing.Book.BookId"
+                                       class="btn btn-outline-primary btn-sm" target="_blank">
+                                        <i class="fas fa-eye me-1"></i>Ver Detalhes
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="col-12">
+            <div class="member-card text-center py-5">
+                <i class="fas fa-history fa-4x text-muted mb-3"></i>
+                <h5 class="text-muted">Nenhum livro devolvido</h5>
+                <p class="text-muted">
+                    Ainda não devolveu nenhum livro. Quando devolver livros emprestados,
+                    eles aparecerão aqui no seu histórico.
+                </p>
+                <a href="@Url.Action("Catalog", "Home")" class="btn btn-primary">
+                    <i class="fas fa-book-open me-2"></i>Explorar Catálogo
+                </a>
+            </div>
+        </div>
+    }
+</div>

@@ -1,0 +1,240 @@
+﻿@* Views/Categories/Delete.cshtml - Following index page style *@
+@model LibraryManagementSystem.Models.Category
+@{
+    ViewData["Title"] = "Eliminar Categoria";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+}
+
+<div class="container-fluid custom-width-container dashboard-container">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center dashboard-header">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-trash me-2"></i>Eliminar Categoria
+                    </h1>
+                    <p class="mb-0">Confirmar eliminação da categoria</p>
+                </div>
+                <div class="text-end">
+                    <a asp-action="Index" class="btn btn-secondary me-2">
+                        <i class="fas fa-arrow-left me-1"></i>Voltar à Lista
+                    </a>
+                    <a asp-action="Details" asp-route-id="@Model.CategoryId" class="btn btn-info">
+                        <i class="fas fa-eye me-1"></i>Ver Detalhes
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Details Card -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card dashboard-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Confirmação de Eliminação
+                    </h6>
+                    @if (Model.Books.Any())
+                    {
+                        <span class="badge bg-danger">Eliminação Bloqueada</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-warning">Confirmação Necessária</span>
+                    }
+                </div>
+                <div class="card-body card-content">
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="fas fa-exclamation-triangle me-2"></i>@TempData["ErrorMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    @if (Model.Books.Any())
+                    {
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Não é possível eliminar esta categoria!</strong><br>
+                            Esta categoria tem <strong>@Model.Books.Count livro(s)</strong> associado(s) e não pode ser eliminada.
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Tem certeza que deseja eliminar esta categoria?</strong><br>
+                            Esta ação não pode ser desfeita!
+                        </div>
+                    }
+
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Categoria</th>
+                                    <th>Descrição</th>
+                                    <th>Número de Livros</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="@(Model.Books.Any() ? "table-danger" : "table-warning")">
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="card-icon @(Model.Books.Any() ? "bg-danger" : "bg-warning-gradient") me-3" style="width: 40px; height: 40px; font-size: 1rem;">
+                                                <i class="fas fa-tag"></i>
+                                            </div>
+                                            <div>
+                                                <strong>@Model.Name</strong>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(Model.Description))
+                                        {
+                                            <span class="text-gray-800">@Model.Description</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted fst-italic">Sem descrição</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge @(Model.Books.Any() ? "bg-danger" : "bg-success")">
+                                            @Model.Books.Count livros
+                                        </span>
+                                    </td>
+                                    <td>
+                                        @if (Model.Books.Any())
+                                        {
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-lock me-1"></i>Bloqueada
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning">
+                                                <i class="fas fa-exclamation-triangle me-1"></i>Pronta para Eliminar
+                                            </span>
+                                        }
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    @if (Model.Books.Any())
+                    {
+                        <div class="mt-4">
+                            <h6>Livros Associados (@Model.Books.Count):</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Título</th>
+                                            <th>Autor</th>
+                                            <th>Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var book in Model.Books.Take(5))
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <i class="fas fa-book me-1 text-primary"></i>
+                                                    <strong>@book.Title</strong>
+                                                </td>
+                                                <td>@book.Author</td>
+                                                <td>
+                                                    <a asp-controller="Books" asp-action="Edit" asp-route-id="@book.BookId"
+                                                       class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        }
+                                        @if (Model.Books.Count > 5)
+                                        {
+                                            <tr>
+                                                <td colspan="3" class="text-center text-muted">
+                                                    <i class="fas fa-plus me-1"></i>
+                                                    Mais @(Model.Books.Count - 5) livro(s)...
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex justify-content-between mt-4">
+                        <div>
+                            <a asp-action="Index" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i>Cancelar
+                            </a>
+                        </div>
+                        <div>
+                            @if (!Model.Books.Any())
+                            {
+                                <form asp-action="Delete" method="post" class="d-inline">
+                                    <input type="hidden" asp-for="CategoryId" />
+                                    <button type="submit" class="btn btn-danger me-2" id="deleteButton">
+                                        <i class="fas fa-trash me-1"></i>Confirmar Eliminação
+                                    </button>
+                                </form>
+                            }
+                            else
+                            {
+                                <a asp-controller="Books" asp-action="Index" asp-route-categoryId="@Model.CategoryId"
+                                   class="btn btn-primary me-2">
+                                    <i class="fas fa-book me-1"></i>Gerir Livros
+                                </a>
+                            }
+                            <a asp-action="Edit" asp-route-id="@Model.CategoryId" class="btn btn-outline-primary">
+                                <i class="fas fa-edit me-1"></i>Editar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const deleteButton = document.getElementById('deleteButton');
+            const deleteForm = document.querySelector('form[asp-action="Delete"]');
+
+            if (deleteButton && deleteForm) {
+                deleteForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+
+                    const categoryName = '@Model.Name';
+                    const bookCount = @Model.Books.Count;
+
+                    if (bookCount > 0) {
+                        alert('Não é possível eliminar esta categoria porque tem livros associados.');
+                        return false;
+                    }
+
+                    if (confirm(`Tem certeza que deseja eliminar a categoria "${categoryName}"?\n\nEsta ação não pode ser desfeita!`)) {
+                        deleteButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>A Eliminar...';
+                        deleteButton.disabled = true;
+                        this.submit();
+                    }
+                });
+            }
+        });
+    </script>
+}

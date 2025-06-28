@@ -1,0 +1,174 @@
+﻿@model LibraryManagementSystem.ViewModels.MemberDashboardViewModel
+
+<div class="row">
+    @if (Model.Books != null && Model.Books.Any())
+    {
+        @foreach (var bookViewModel in Model.Books)
+        {
+            <div class="col-lg-4 col-md-6 mb-4" id="book-@bookViewModel.Book.BookId">
+                <div class="card book-card h-100">
+                    <div class="card-body">
+                        <!-- Book Info -->
+                        <div class="text-center mb-3">
+                            <i class="fas fa-book fa-3x text-primary mb-2"></i>
+                            <h6 class="card-title font-weight-bold">@bookViewModel.Book.Title</h6>
+                            <p class="text-muted mb-1">@bookViewModel.Book.Author</p>
+                            <small class="text-muted">
+                                <!-- FIXED: Display multiple categories from Categories collection -->
+                                <i class="fas fa-tag me-1"></i>
+                                @if (bookViewModel.Book.Categories != null && bookViewModel.Book.Categories.Any())
+                                {
+                                    @string.Join(", ", bookViewModel.Book.Categories.Select(c => c.Name))
+                                }
+                                else
+                                {
+                                    <text>Sem categoria</text>
+                                }
+                                |
+                                <i class="fas fa-calendar me-1"></i>@bookViewModel.Book.YearPublished
+                            </small>
+                        </div>
+
+                        <!-- Status Information -->
+                        @if ((Model.CurrentTab == "borrowed" || Model.CurrentTab == "overdue") && bookViewModel.Borrowing != null)
+                        {
+                            <div class="text-center mb-3">
+                                <span class="status-badge @(bookViewModel.Borrowing.DueDate < DateTime.Now ? "status-overdue" : "status-borrowed")">
+                                    @if (bookViewModel.Borrowing.DueDate < DateTime.Now)
+                                    {
+                                        <i class="fas fa-exclamation-triangle me-1"></i>
+                                        <text>@((DateTime.Now - bookViewModel.Borrowing.DueDate).Days) dias em atraso</text>
+                                    }
+                                    else
+                                    {
+                                        <i class="fas fa-clock me-1"></i>
+                                        <text>Vence em @bookViewModel.Borrowing.DueDate.ToString("dd/MM/yyyy")</text>
+                                    }
+                                </span>
+                            </div>
+                        }
+
+                        <!-- Book Interactions -->
+                        <div class="book-interactions">
+                            <!-- Show ratings (read-only) -->
+                            <div class="book-rating-display mb-3">
+                                <div class="d-flex justify-content-center gap-3">
+                                    <span class="rating-display">
+                                        <i class="fas fa-thumbs-up text-success"></i>
+                                        <span id="likes-@bookViewModel.Book.BookId">@bookViewModel.LikesCount</span>
+                                    </span>
+                                    <span class="rating-display">
+                                        <i class="fas fa-thumbs-down text-danger"></i>
+                                        <span id="dislikes-@bookViewModel.Book.BookId">@bookViewModel.DislikesCount</span>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Access Control: Only allow rating if user has borrowed the book -->
+                            @{
+                                var canEvaluate = Model.CurrentTab == "borrowed" || Model.CurrentTab == "overdue";
+                            }
+
+                            @if (canEvaluate)
+                            {
+                                <div class="can-evaluate">
+                                    <div class="text-center mb-2">
+                                        <small class="text-success">
+                                            <i class="fas fa-check-circle me-1"></i>
+                                            Pode avaliar este livro
+                                        </small>
+                                    </div>
+                                    <div class="d-flex justify-content-center gap-2 mb-3">
+                                        <button class="btn btn-outline-success btn-sm" onclick="rateBook('@bookViewModel.Book.BookId', true)">
+                                            <i class="fas fa-thumbs-up"></i> Gosto
+                                        </button>
+                                        <button class="btn btn-outline-danger btn-sm" onclick="rateBook('@bookViewModel.Book.BookId', false)">
+                                            <i class="fas fa-thumbs-down"></i> Não Gosto
+                                        </button>
+                                    </div>
+
+                                    <div class="d-flex justify-content-center">
+                                        <button class="btn btn-outline-secondary btn-sm"
+                                                onclick="addComment('@bookViewModel.Book.BookId', '@bookViewModel.Book.Title')">
+                                            <i class="fas fa-comment me-1"></i>Comentar
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="evaluation-restricted">
+                                    <small class="text-warning">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Só pode avaliar livros que já requisitou ou devolveu
+                                    </small>
+                                </div>
+                            }
+
+                            <!-- Comments Section -->
+                            @if (bookViewModel.Comments != null && bookViewModel.Comments.Any())
+                            {
+                                <div class="comments-section mt-3">
+                                    <h6 class="mb-2">
+                                        <i class="fas fa-comments me-1"></i>Comentários (@bookViewModel.Comments.Count)
+                                    </h6>
+                                    @foreach (var comment in bookViewModel.Comments.Take(2))
+                                    {
+                                        <div class="comment-item">
+                                            <div class="comment-meta">
+                                                @(comment.Member?.Name ?? "Utilizador") - @comment.ReviewDate.ToString("dd/MM/yyyy")
+                                            </div>
+                                            <div class="comment-text">@comment.Comment</div>
+                                        </div>
+                                    }
+                                    @if (bookViewModel.Comments.Count > 2)
+                                    {
+                                        <small class="text-muted">
+                                            <i class="fas fa-plus me-1"></i>Mais @(bookViewModel.Comments.Count - 2) comentários...
+                                        </small>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="col-12">
+            <div class="member-card text-center py-5">
+                <i class="fas fa-book fa-4x text-muted mb-3"></i>
+                <h5 class="text-muted">
+                    @switch (Model.CurrentTab)
+                    {
+                        case "borrowed":
+                            <text>Nenhum livro emprestado</text>
+                            break;
+                        case "overdue":
+                            <text>Nenhum livro em atraso</text>
+                            break;
+                        default:
+                            <text>Nenhum livro disponível</text>
+                            break;
+                    }
+                </h5>
+                <p class="text-muted">
+                    @switch (Model.CurrentTab)
+                    {
+                        case "borrowed":
+                            <text>Não tem livros emprestados no momento.</text>
+                            break;
+                        case "overdue":
+                            <text>Parabéns! Não tem livros em atraso.</text>
+                            break;
+                        default:
+                            <text>Não há livros disponíveis para empréstimo no momento.</text>
+                            break;
+                    }
+                </p>
+            </div>
+        </div>
+    }
+</div>

@@ -1,0 +1,371 @@
+﻿@* Views/Borrowings/Details.cshtml *@
+@model LibraryManagementSystem.Models.Borrowing
+@{
+    ViewData["Title"] = "Detalhes do Empréstimo";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-dashboard.css" asp-append-version="true" />
+}
+
+<div class="container-fluid custom-width-container dashboard-container">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center dashboard-header">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-handshake me-2"></i>Detalhes do Empréstimo
+                    </h1>
+                    <p class="mb-0">Informações completas do empréstimo de livro</p>
+                </div>
+                <div class="text-end">
+                    <a asp-action="Index" class="btn btn-secondary me-2">
+                        <i class="fas fa-arrow-left me-1"></i>Voltar à Lista
+                    </a>
+                    @if (Model.Status == "Emprestado")
+                    {
+                        <form asp-action="Return" method="post" class="d-inline">
+                            <input type="hidden" name="id" value="@Model.BorrowingId" />
+                            <button type="submit" class="btn btn-success"
+                                    onclick="return confirm('Confirma a devolução deste livro?')">
+                                <i class="fas fa-undo me-1"></i>Devolver Livro
+                            </button>
+                        </form>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Borrowing Status Alert -->
+    <div class="row mb-4">
+        <div class="col-12">
+            @if (Model.Status == "Emprestado" && Model.DueDate < DateTime.Now)
+            {
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Livro em Atraso!</strong> Este empréstimo está @((DateTime.Now - Model.DueDate).Days) dias em atraso.
+                </div>
+            }
+            else if (Model.Status == "Emprestado")
+            {
+                <div class="alert alert-warning">
+                    <i class="fas fa-clock me-2"></i>
+                    <strong>Empréstimo Ativo</strong> - Livro deve ser devolvido até @Model.DueDate.ToString("dd/MM/yyyy").
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <strong>Livro Devolvido</strong> em @Model.ReturnDate?.ToString("dd/MM/yyyy HH:mm").
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Main Information Cards -->
+    <div class="row mb-4">
+        <!-- Book Information -->
+        <div class="col-lg-6 mb-4">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-book me-2"></i>Informações do Livro
+                    </h6>
+                </div>
+                <div class="card-body card-content">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="card-icon bg-primary-gradient me-3">
+                            <i class="fas fa-book"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-0">@Model.Book.Title</h5>
+                            <small class="text-muted">por @Model.Book.Author</small>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12 mb-2">
+                            <strong>ISBN:</strong>
+                            <span class="badge bg-secondary ms-2">@(Model.Book.ISBN ?? "N/A")</span>
+                        </div>
+                        <div class="col-12 mb-2">
+                            <strong>Ano de Publicação:</strong>
+                            <span class="text-gray-800">@(Model.Book.YearPublished?.ToString() ?? "N/A")</span>
+                        </div>
+                        <div class="col-12 mb-2">
+                            <strong>Categorias:</strong><br>
+                            @if (Model.Book.Categories != null && Model.Book.Categories.Any())
+                            {
+                                @foreach (var category in Model.Book.Categories)
+                                {
+                                    <span class="badge bg-info me-1">
+                                        <i class="fas fa-tag me-1"></i>@category.Name
+                                    </span>
+                                }
+                            }
+                            else
+                            {
+                                <span class="text-muted">Sem categorias</span>
+                            }
+                        </div>
+                        <div class="col-12">
+                            <strong>Estado Atual:</strong>
+                            <span class="badge @(Model.Book.Available ? "bg-success" : "bg-warning") ms-2">
+                                @(Model.Book.Available ? "Disponível" : "Emprestado")
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <a asp-controller="Books" asp-action="Details" asp-route-id="@Model.Book.BookId"
+                           class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-eye me-1"></i>Ver Detalhes do Livro
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Member Information -->
+        <div class="col-lg-6 mb-4">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-user me-2"></i>Informações do Membro
+                    </h6>
+                </div>
+                <div class="card-body card-content">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="card-icon bg-success-gradient me-3">
+                            @Model.Member.Name.Substring(0, 1).ToUpper()
+                        </div>
+                        <div>
+                            <h5 class="mb-0">@Model.Member.Name</h5>
+                            <small class="text-muted">Cartão: @Model.Member.CardNumber</small>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12 mb-2">
+                            <strong>Email:</strong><br>
+                            <i class="fas fa-envelope text-primary me-1"></i>
+                            <a href="mailto:@Model.Member.Email" class="text-decoration-none">@Model.Member.Email</a>
+                        </div>
+                        <div class="col-12 mb-2">
+                            <strong>Telefone:</strong><br>
+                            <i class="fas fa-phone text-success me-1"></i>
+                            <span class="text-gray-800">@(Model.Member.Phone ?? "Não informado")</span>
+                        </div>
+                        <div class="col-12 mb-2">
+                            <strong>Data de Inscrição:</strong><br>
+                            <i class="fas fa-calendar text-info me-1"></i>
+                            <span class="text-gray-800">@Model.Member.MembershipDate.ToString("dd/MM/yyyy")</span>
+                        </div>
+                        <div class="col-12">
+                            <strong>Estado:</strong>
+                            <span class="badge @(Model.Member.IsActive ? "bg-success" : "bg-danger") ms-2">
+                                @(Model.Member.IsActive ? "Ativo" : "Inativo")
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <a asp-controller="Members" asp-action="Details" asp-route-id="@Model.Member.MemberId"
+                           class="btn btn-sm btn-outline-success">
+                            <i class="fas fa-eye me-1"></i>Ver Detalhes do Membro
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Borrowing Timeline -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card dashboard-card">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-clock me-2"></i>Cronologia do Empréstimo
+                    </h6>
+                </div>
+                <div class="card-body card-content">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <div class="text-center">
+                                <div class="card-icon bg-info-gradient mx-auto mb-2" style="width: 50px; height: 50px;">
+                                    <i class="fas fa-calendar-plus"></i>
+                                </div>
+                                <h6 class="mb-1">Data de Empréstimo</h6>
+                                <p class="mb-0 fw-bold">@Model.BorrowDate.ToString("dd/MM/yyyy")</p>
+                                <small class="text-muted">@Model.BorrowDate.ToString("HH:mm")</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="text-center">
+                                <div class="card-icon bg-warning-gradient mx-auto mb-2" style="width: 50px; height: 50px;">
+                                    <i class="fas fa-calendar-times"></i>
+                                </div>
+                                <h6 class="mb-1">Data Limite</h6>
+                                <p class="mb-0 fw-bold @(Model.DueDate < DateTime.Now && Model.Status == "Emprestado" ? "text-danger" : "")">
+                                    @Model.DueDate.ToString("dd/MM/yyyy")
+                                </p>
+                                @if (Model.Status == "Emprestado")
+                                {
+                                    @if (Model.DueDate < DateTime.Now)
+                                    {
+                                        <small class="text-danger">@((DateTime.Now - Model.DueDate).Days) dias em atraso</small>
+                                    }
+                                    else
+                                    {
+                                        <small class="text-success">@((Model.DueDate - DateTime.Now).Days) dias restantes</small>
+                                    }
+                                }
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="text-center">
+                                <div class="card-icon @(Model.ReturnDate.HasValue ? "bg-success-gradient" : "bg-secondary") mx-auto mb-2" style="width: 50px; height: 50px;">
+                                    <i class="fas fa-@(Model.ReturnDate.HasValue ? "check-circle" : "question-circle")"></i>
+                                </div>
+                                <h6 class="mb-1">Data de Devolução</h6>
+                                @if (Model.ReturnDate.HasValue)
+                                {
+                                    <p class="mb-0 fw-bold text-success">@Model.ReturnDate.Value.ToString("dd/MM/yyyy")</p>
+                                    <small class="text-muted">@Model.ReturnDate.Value.ToString("HH:mm")</small>
+                                }
+                                else
+                                {
+                                    <p class="mb-0 text-muted">Não devolvido</p>
+                                    <small class="text-muted">Pendente</small>
+                                }
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="text-center">
+                                <div class="card-icon @(Model.Status == "Devolvido" ? "bg-success-gradient" : "bg-warning-gradient") mx-auto mb-2" style="width: 50px; height: 50px;">
+                                    <i class="fas fa-@(Model.Status == "Devolvido" ? "thumbs-up" : "hourglass-half")"></i>
+                                </div>
+                                <h6 class="mb-1">Estado</h6>
+                                <span class="badge @(Model.Status == "Devolvido" ? "bg-success" : "bg-warning") fs-6">
+                                    @Model.Status
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Duration Calculation -->
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="alert alert-light">
+                                <h6><i class="fas fa-calculator me-2"></i>Duração do Empréstimo:</h6>
+                                @if (Model.ReturnDate.HasValue)
+                                {
+                                    var duration = (Model.ReturnDate.Value - Model.BorrowDate).Days;
+                                    <p class="mb-0">
+                                        <strong>@duration dias</strong>
+                                        (@Model.BorrowDate.ToString("dd/MM/yyyy") até @Model.ReturnDate.Value.ToString("dd/MM/yyyy"))
+                                    </p>
+                                    @if (Model.ReturnDate.Value > Model.DueDate)
+                                    {
+                                        var lateDays = (Model.ReturnDate.Value - Model.DueDate).Days;
+                                        <small class="text-danger">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>
+                                            Devolvido com @lateDays dias de atraso
+                                        </small>
+                                    }
+                                    else
+                                    {
+                                        <small class="text-success">
+                                            <i class="fas fa-check me-1"></i>
+                                            Devolvido dentro do prazo
+                                        </small>
+                                    }
+                                }
+                                else
+                                {
+                                    var currentDuration = (DateTime.Now - Model.BorrowDate).Days;
+                                    <p class="mb-0">
+                                        <strong>@currentDuration dias</strong> desde o empréstimo
+                                        (@Model.BorrowDate.ToString("dd/MM/yyyy") até hoje)
+                                    </p>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    @if (Model.Status == "Emprestado")
+    {
+        <div class="row">
+            <div class="col-12">
+                <div class="card dashboard-card">
+                    <div class="card-header">
+                        <h6 class="m-0 font-weight-bold">
+                            <i class="fas fa-cogs me-2"></i>Ações Disponíveis
+                        </h6>
+                    </div>
+                    <div class="card-body card-content text-center">
+                        <form asp-action="Return" method="post" class="d-inline">
+                            <input type="hidden" name="id" value="@Model.BorrowingId" />
+                            <button type="submit" class="btn btn-success btn-lg me-3"
+                                    onclick="return confirm('Confirma a devolução deste livro?\n\nEsta ação irá:\n• Marcar o empréstimo como devolvido\n• Tornar o livro disponível para novos empréstimos')">
+                                <i class="fas fa-undo me-2"></i>Processar Devolução
+                            </button>
+                        </form>
+
+                        <a asp-action="Edit" asp-route-id="@Model.BorrowingId" class="btn btn-outline-primary btn-lg">
+                            <i class="fas fa-edit me-2"></i>Editar Empréstimo
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        // Enhanced confirmation for book returns
+        document.querySelectorAll('form[asp-action="Return"]').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                const isOverdue = @(Model.Status == "Emprestado" && Model.DueDate < DateTime.Now ? "true" : "false");
+                let message = 'Confirma a devolução deste livro?\n\nEsta ação irá:\n• Marcar o empréstimo como devolvido\n• Tornar o livro disponível para novos empréstimos';
+
+                if (isOverdue) {
+                    message += '\n\nNota: Este livro está em atraso.';
+                }
+
+                if (!confirm(message)) {
+                    e.preventDefault();
+                }
+            });
+        });
+
+        // Add loading state to action buttons
+        document.querySelectorAll('.btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (this.type === 'submit') {
+                    const icon = this.querySelector('i');
+                    const originalClass = icon.className;
+                    if (icon) {
+                        icon.className = 'fas fa-spinner fa-spin me-2';
+                        // Restore original icon after 3 seconds if still visible
+                        setTimeout(() => {
+                            if (icon.className.includes('fa-spinner')) {
+                                icon.className = originalClass;
+                            }
+                        }, 3000);
+                    }
+                }
+            });
+        });
+    </script>
+}
