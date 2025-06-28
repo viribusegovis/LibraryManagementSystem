@@ -1,5 +1,4 @@
-﻿// Hubs/BookReviewHub.cs - Enhanced with database context
-using Microsoft.AspNetCore.SignalR;
+﻿using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.Authorization;
 using LibraryManagementSystem.Data;
 using LibraryManagementSystem.Models;
@@ -7,22 +6,36 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LibraryManagementSystem.Hubs
 {
+    /**
+     * Hub SignalR para gestão de avaliações de livros em tempo real
+     * Permite comunicação bidirecional entre clientes para atualizações instantâneas
+     * Implementa autenticação obrigatória e integração com base de dados
+     */
     [Authorize]
     public class BookReviewHub : Hub
     {
         private readonly LibraryContext _context;
 
+        /**
+         * Inicializa o hub com contexto da base de dados
+         * @param context Contexto Entity Framework para operações de dados
+         */
         public BookReviewHub(LibraryContext context)
         {
             _context = context;
         }
 
+        /**
+         * Adiciona utilizador a grupo específico de um livro
+         * Permite receber atualizações em tempo real sobre avaliações do livro
+         * @param bookId Identificador único do livro
+         */
         public async Task JoinBookGroup(string bookId)
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, $"Book_{bookId}");
             Console.WriteLine($"User {Context.UserIdentifier} joined group Book_{bookId}");
 
-            // Notify group about new viewer
+            /* Notificar grupo sobre novo visualizador */
             await Clients.Group($"Book_{bookId}").SendAsync("ViewerJoined", new
             {
                 userId = Context.UserIdentifier,
@@ -30,12 +43,16 @@ namespace LibraryManagementSystem.Hubs
             });
         }
 
+        /**
+         * Remove utilizador do grupo específico de um livro
+         * @param bookId Identificador único do livro
+         */
         public async Task LeaveBookGroup(string bookId)
         {
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"Book_{bookId}");
             Console.WriteLine($"User {Context.UserIdentifier} left group Book_{bookId}");
 
-            // Notify group about viewer leaving
+            /* Notificar grupo sobre saída do visualizador */
             await Clients.Group($"Book_{bookId}").SendAsync("ViewerLeft", new
             {
                 userId = Context.UserIdentifier,
@@ -43,7 +60,13 @@ namespace LibraryManagementSystem.Hubs
             });
         }
 
-        // Enhanced method for quick rating from dashboard
+        /**
+         * Avaliação rápida de livro (like/dislike) com validação de empréstimo
+         * Verifica se o membro emprestou o livro antes de permitir avaliação
+         * @param bookId Identificador do livro a avaliar
+         * @param memberId Identificador do membro que avalia
+         * @param isLike True para like, false para dislike
+         */
         public async Task QuickRate(string bookId, string memberId, bool isLike)
         {
             try
@@ -51,7 +74,7 @@ namespace LibraryManagementSystem.Hubs
                 var bookGuid = Guid.Parse(bookId);
                 var memberGuid = Guid.Parse(memberId);
 
-                // Check if member has borrowed this book
+                /* Validar se o membro emprestou o livro */
                 var hasBorrowedBook = await _context.Borrowings
                     .AnyAsync(b => b.BookId == bookGuid && b.MemberId == memberGuid);
 
@@ -64,7 +87,7 @@ namespace LibraryManagementSystem.Hubs
                     return;
                 }
 
-                // Check if already reviewed
+                /* Verificar se já existe avaliação */
                 var existingReview = await _context.BookReviews
                     .FirstOrDefaultAsync(r => r.BookId == bookGuid && r.MemberId == memberGuid);
 
@@ -77,7 +100,7 @@ namespace LibraryManagementSystem.Hubs
                     return;
                 }
 
-                // Create new review
+                /* Criar nova avaliação */
                 var review = new BookReview
                 {
                     BookReviewId = Guid.NewGuid(),
@@ -90,7 +113,7 @@ namespace LibraryManagementSystem.Hubs
                 _context.BookReviews.Add(review);
                 await _context.SaveChangesAsync();
 
-                // Get member info and updated stats
+                /* Obter dados atualizados e transmitir para grupo */
                 var member = await _context.Members.FindAsync(memberGuid);
                 var book = await _context.Books
                     .Include(b => b.BookReviews)
@@ -103,7 +126,7 @@ namespace LibraryManagementSystem.Hubs
                     var totalReviews = book.BookReviews.Count;
                     var averageRating = book.BookReviews.Where(r => r.Rating.HasValue).Average(r => r.Rating) ?? 0;
 
-                    // Broadcast to all viewers
+                    /* Transmitir estatísticas atualizadas para todos os clientes do grupo */
                     await Clients.Group($"Book_{bookId}").SendAsync("UpdateBookStats", new
                     {
                         bookId = bookId,
@@ -136,7 +159,15 @@ namespace LibraryManagementSystem.Hubs
             }
         }
 
-        // Method for commenting from dashboard
+        /**
+         * Adiciona comentário com avaliação opcional
+         * Permite criar ou atualizar avaliação existente com comentário
+         * @param bookId Identificador do livro
+         * @param memberId Identificador do membro
+         * @param comment Texto do comentário
+         * @param isLike Avaliação positiva/negativa
+         * @param rating Classificação opcional (1-5 estrelas)
+         */
         public async Task AddQuickComment(string bookId, string memberId, string comment, bool isLike, int? rating = null)
         {
             try
@@ -147,7 +178,7 @@ namespace LibraryManagementSystem.Hubs
                 var member = await _context.Members.FindAsync(memberGuid);
                 if (member == null) return;
 
-                // Check borrowing history
+                /* Validar histórico de empréstimos */
                 var hasBorrowedBook = await _context.Borrowings
                     .AnyAsync(b => b.BookId == bookGuid && b.MemberId == memberGuid);
 
@@ -163,6 +194,7 @@ namespace LibraryManagementSystem.Hubs
                 var existingReview = await _context.BookReviews
                     .FirstOrDefaultAsync(r => r.BookId == bookGuid && r.MemberId == memberGuid);
 
+                /* Criar nova avaliação ou atualizar existente */
                 if (existingReview == null)
                 {
                     existingReview = new BookReview
@@ -187,7 +219,7 @@ namespace LibraryManagementSystem.Hubs
 
                 await _context.SaveChangesAsync();
 
-                // Broadcast update
+                /* Transmitir nova avaliação para grupo */
                 await Clients.Group($"Book_{bookId}").SendAsync("NewReview", new
                 {
                     reviewId = existingReview.BookReviewId.ToString(),
@@ -198,7 +230,7 @@ namespace LibraryManagementSystem.Hubs
                     reviewDate = existingReview.ReviewDate.ToString("dd/MM/yyyy HH:mm")
                 });
 
-                // Update stats
+                /* Atualizar estatísticas do livro */
                 var book = await _context.Books
                     .Include(b => b.BookReviews)
                     .FirstOrDefaultAsync(b => b.BookId == bookGuid);
@@ -232,12 +264,21 @@ namespace LibraryManagementSystem.Hubs
             }
         }
 
+        /**
+         * Evento de conexão de cliente
+         * Registra conexão para debugging e monitorização
+         */
         public override async Task OnConnectedAsync()
         {
             Console.WriteLine($"SignalR: User {Context.UserIdentifier} connected to BookReviewHub");
             await base.OnConnectedAsync();
         }
 
+        /**
+         * Evento de desconexão de cliente
+         * Registra desconexão e possíveis erros
+         * @param exception Exceção que causou a desconexão (se aplicável)
+         */
         public override async Task OnDisconnectedAsync(Exception exception)
         {
             Console.WriteLine($"SignalR: User {Context.UserIdentifier} disconnected from BookReviewHub");
